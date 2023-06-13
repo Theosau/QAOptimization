@@ -1,4 +1,22 @@
+import sqlite3
 import streamlit as st
+
+# Database setup
+def create_table():
+    conn = sqlite3.connect('questionsDB.sqlite')
+    c = conn.cursor()
+    c.execute('CREATE TABLE IF NOT EXISTS questions (question TEXT)')
+    conn.close()
+
+def add_question_to_db(question):
+    conn = sqlite3.connect('questionsDB.sqlite')
+    c = conn.cursor()
+    c.execute('INSERT INTO questions (question) VALUES (?)', (question,))
+    conn.commit()
+    conn.close()
+
+# Create the database table
+create_table()
 
 def main():
     st.set_page_config(layout="wide")  # Add this line
@@ -20,34 +38,25 @@ def main():
     if 'difficult_questions' not in st.session_state:
         st.session_state['difficult_questions'] = []
 
+    if 'question_input' not in st.session_state:
+        st.session_state['question_input'] = ''
+
     # Button press triggers clearing the input box
     clear_input = False
     if 'clear_input' in st.session_state:
         if st.session_state['clear_input']:
             clear_input = True
             st.session_state['clear_input'] = False
+    
+    # Text input and submit button for new question
+    question_input = st.text_input('Please enter your question:', key='question_input')
 
-    user_question = st.text_input('Please enter your question:', value='' if clear_input else '', key='question_input')
-    if st.button('Submit'):
-        if user_question:
-            # Add the question to the list
-            st.session_state['question_list'].append(user_question)
-            st.session_state['clear_input'] = True
-            # st.success('Question submitted successfully')
-        else:
-            st.session_state['question_list'] = [
-                "How will advancements in artificial intelligence impact the job market in the next decade?",
-                "What ethical considerations should be taken into account when developing and deploying AI technologies in various industries?",
-                "Will AI eventually surpass human intelligence, and if so, what are the potential implications?",
-                "How will AI contribute to advancements in healthcare and medical research in the coming years?",
-                "What steps should be taken to ensure the responsible and accountable use of AI in autonomous vehicles?",
-                "How might AI impact privacy and data security concerns in the future?",
-                "What are the potential risks and challenges associated with the widespread adoption of AI in military applications?",
-                "How will AI shape the future of education and learning methodologies?",
-                "What are the possibilities and risks of AI in the field of criminal justice and law enforcement?",
-                "How will AI impact the economy and global geopolitics in the next decade?",
-            ]
-            # st.warning('You did not enter a question.')
+    # Only append to the list and rerun if the button is clicked and there's a question to add
+    if (st.button('Submit Question') or question_input) and question_input:
+        st.session_state['question_list'].append(question_input)  # Add the question to the list
+        add_question_to_db(question_input)  # Store the question in the database
+        st.experimental_rerun()  # Rerun the app to update the list of displayed questions
+
 
     # Set up the layout with two columns
     col1, col2 = st.columns(2)
