@@ -1,10 +1,24 @@
+import os
 import streamlit as st
+from database_class import EventDatabase
+
+def check_overlapping_questions(new_list, existing_list):
+    new_list_set = set(new_list)
+    existing_list_set = set(existing_list)
+    new_list_set -= existing_list_set
+    return list(new_list_set)
 
 def main():
     st.set_page_config(layout="wide")  # Add this line
     st.title('Event Q&A Streamlining App')
 
     # Create the session state variables if they don't exist
+    if 'eventdb' not in st.session_state:
+        st.session_state['eventdb'] = None
+
+    if 'event_name' not in st.session_state:
+        st.session_state['event_name'] = ''
+
     if 'question_list' not in st.session_state:
         st.session_state['question_list'] = []
 
@@ -20,34 +34,33 @@ def main():
     if 'difficult_questions' not in st.session_state:
         st.session_state['difficult_questions'] = []
 
-    # Button press triggers clearing the input box
-    clear_input = False
-    if 'clear_input' in st.session_state:
-        if st.session_state['clear_input']:
-            clear_input = True
-            st.session_state['clear_input'] = False
+    if 'question_input' not in st.session_state:
+        st.session_state['question_input'] = ''
 
-    user_question = st.text_input('Please enter your question:', value='' if clear_input else '', key='question_input')
-    if st.button('Submit'):
-        if user_question:
-            # Add the question to the list
-            st.session_state['question_list'].append(user_question)
-            st.session_state['clear_input'] = True
-            # st.success('Question submitted successfully')
-        else:
-            st.session_state['question_list'] = [
-                "How will advancements in artificial intelligence impact the job market in the next decade?",
-                "What ethical considerations should be taken into account when developing and deploying AI technologies in various industries?",
-                "Will AI eventually surpass human intelligence, and if so, what are the potential implications?",
-                "How will AI contribute to advancements in healthcare and medical research in the coming years?",
-                "What steps should be taken to ensure the responsible and accountable use of AI in autonomous vehicles?",
-                "How might AI impact privacy and data security concerns in the future?",
-                "What are the potential risks and challenges associated with the widespread adoption of AI in military applications?",
-                "How will AI shape the future of education and learning methodologies?",
-                "What are the possibilities and risks of AI in the field of criminal justice and law enforcement?",
-                "How will AI impact the economy and global geopolitics in the next decade?",
-            ]
-            # st.warning('You did not enter a question.')
+    # Create the session state variables if they don't exist
+    if not st.session_state['eventdb']:
+        with st.form(key='event_name_form'):
+            event_name = st.text_input("Please enter your event name:")
+            event_name_button = st.form_submit_button(label='Provide Event Name')
+        if event_name_button:
+            st.success('Provided event name successfully')
+            event_database_name = event_name.strip()
+            st.session_state['eventdb'] = EventDatabase(event_database_name)
+            st.session_state['event_name'] = event_name
+    else:
+        eventdb = st.session_state['eventdb']
+
+    with st.form(key='question_form'):
+        # Use columns to create a row of input fields
+        col_form1, col_form2 = st.columns(2)
+        name_input = col_form1.text_input('Please enter your name:')
+        followers_input = col_form2.number_input('Number of followers:', min_value=0)
+        question_input = st.text_input('Question:')
+        submit_button = st.form_submit_button(label='Submit Question')
+
+    if submit_button and name_input and followers_input is not None and question_input:
+        eventdb.add_question_to_db(name_input, followers_input, question_input)  # Store the data in the database
+        st.success('Question submitted successfully')
 
     # Set up the layout with two columns
     col1, col2 = st.columns(2)
@@ -60,7 +73,6 @@ def main():
         if st.button('Summarize Questions'):
             # Here I'm just selecting the first three questions as a dummy "summarizing" function
             # Replace this with your actual summarizing function
-            # st.session_state['summarized_questions'] = st.session_state['question_list'][:3]
             st.session_state['summarized_questions'] = [
                 "What are the potential impacts and ethical considerations of AI in various domains such as the job market, healthcare, transportation, education, privacy, security, and criminal justice? (covers 8 questions)", 
                 "How will AI influence the economy, global geopolitics, and military applications? (covers 2 questions)"
@@ -78,37 +90,80 @@ def main():
         st.markdown(css, unsafe_allow_html=True)
 
         # Create a container for the questions
-        num_questions = len(st.session_state['question_list'])
-        with st.expander(f"See questions (Total: {num_questions})"):  
+        if st.session_state['eventdb'] is not None:
+            st.session_state['question_list'] = st.session_state['eventdb'].get_questions_from_db()
+            if  len(st.session_state['question_list'])>0:
+                num_questions = len(st.session_state['question_list'])
+                tstring = f"See questions (Total: {num_questions})"
+            else:
+                tstring = "No questions have been asked yet."
+        else:
+            tstring = "The event has not been named yet."
+        with st.expander(tstring):  
             for question in st.session_state['question_list']:
                 st.markdown(f'- {question}')
 
     # Display the summarized questions in the right column
     with col2:
         st.header('Summarized Questions')
-        for question in st.session_state['summarized_questions']:
-            st.markdown(f'- {question}')
+        if len(st.session_state['event_name'])>0:
+            if len(st.session_state['summarized_questions'])>0:
+                for question in st.session_state['summarized_questions']:
+                    st.markdown(f'- {question}')
+            else:
+                st.markdown("No questions have been summarized yet.")
+        else:
+            st.markdown('The event has not been named yet.')
 
     # Set up the layout with three columns
-    col3, col4, col5 = st.columns(3)
-
-    # Display the influential person questions in the first column
-    with col3:
-        st.header('Influential Person Questions')
-        for question in st.session_state['influential_questions']:
-            st.markdown(f'- {question}')
+    col3, col4 = st.columns(2)
 
     # Display the easy questions in the second column
-    with col4:
+    with col3:
         st.header('Easy Questions')
-        for question in st.session_state['easy_questions']:
-            st.markdown(f'- {question}')
+        if len(st.session_state['event_name'])>0:
+            if st.button('Suggest Easy Questions'):
+                st.session_state['easy_questions'] += st.session_state['eventdb'].get_random_questions()
+                # make sure there is no overlap between the easy and hard questions
+                if st.session_state['difficult_questions'] is not None:
+                    st.session_state['easy_questions'] = check_overlapping_questions(
+                        st.session_state['easy_questions'],
+                        st.session_state['difficult_questions']
+                    )
+            for question in st.session_state['easy_questions']:
+                st.markdown(f'- {question}')
+        else:
+            st.markdown('The event has not been named yet.')
 
     # Display the difficult questions in the third column
-    with col5:
+    with col4:
         st.header('Difficult Questions')
-        for question in st.session_state['difficult_questions']:
-            st.markdown(f'- {question}')
+        if len(st.session_state['event_name'])>0:
+            if st.button('Suggest Difficult Questions'):
+                st.session_state['difficult_questions'] += st.session_state['eventdb'].get_random_questions()
+                # make sure there is no overlap between the easy and hard questions
+                if st.session_state['easy_questions'] is not None:
+                    st.session_state['difficult_questions'] = check_overlapping_questions(
+                        st.session_state['difficult_questions'],
+                        st.session_state['easy_questions']
+                    )
+            for question in st.session_state['difficult_questions']:
+                st.markdown(f'- {question}')
+        else:
+            st.markdown('The event has not been named yet.')
+
+    # Display the influential person questions
+    st.header('Influential Person Questions')
+    if len(st.session_state['event_name'])>0:
+        if not st.session_state['eventdb'].is_db_empty():
+            most_influential = st.session_state['eventdb'].get_most_influential_question()
+            nl = '\n'
+            st.markdown(f"**{most_influential[2]}**")
+            st.markdown(f"by **{most_influential[0]}** with **{most_influential[1]}** followers")
+        else:
+            st.markdown('No questions have been asked yet.')
+    else:
+        st.markdown('The event has not been named yet.')
 
 if __name__ == "__main__":
     main()
