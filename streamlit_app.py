@@ -157,7 +157,6 @@ def main():
     if len(st.session_state['event_name'])>0:
         if not st.session_state['eventdb'].is_db_empty():
             most_influential = st.session_state['eventdb'].get_most_influential_question()
-            nl = '\n'
             st.markdown(f"**{most_influential[2]}**")
             st.markdown(f"by **{most_influential[0]}** with **{most_influential[1]}** followers")
         else:
