@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 from database_class import EventDatabase
+from llm_actions import summarize_questions_gpt
 
 def check_overlapping_questions(new_list, existing_list):
     new_list_set = set(new_list)
@@ -18,6 +19,9 @@ def main():
 
     if 'event_name' not in st.session_state:
         st.session_state['event_name'] = ''
+
+    if 'event_database_name' not in st.session_state:
+        st.session_state['event_database_name'] = ''
 
     if 'question_list' not in st.session_state:
         st.session_state['question_list'] = []
@@ -37,18 +41,25 @@ def main():
     if 'question_input' not in st.session_state:
         st.session_state['question_input'] = ''
 
+    # Before you define your button, check if the 'last_action' is not in the session state
+    if 'last_action' not in st.session_state:
+        st.session_state['last_action'] = None
+
     # Create the session state variables if they don't exist
     if not st.session_state['eventdb']:
         with st.form(key='event_name_form'):
             event_name = st.text_input("Please enter your event name:")
             event_name_button = st.form_submit_button(label='Provide Event Name')
         if event_name_button:
+            st.session_state['last_action'] = 'event_name'
             st.success('Provided event name successfully')
-            event_database_name = event_name.strip()
+            event_database_name = event_name.replace(" ", "")
             st.session_state['eventdb'] = EventDatabase(event_database_name)
             st.session_state['event_name'] = event_name
+            st.session_state['event_database_name'] = event_database_name
     else:
         eventdb = st.session_state['eventdb']
+        st.subheader(f"{st.session_state['event_name']}")
 
     with st.form(key='question_form'):
         # Use columns to create a row of input fields
@@ -59,11 +70,12 @@ def main():
         submit_button = st.form_submit_button(label='Submit Question')
 
     if submit_button and name_input and followers_input is not None and question_input:
+        st.session_state['last_action'] = 'submit_question'
         eventdb.add_question_to_db(name_input, followers_input, question_input)  # Store the data in the database
         st.success('Question submitted successfully')
 
     # Set up the layout with two columns
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)    
 
     # Display the questions received in the left column
     with col1:
@@ -71,12 +83,9 @@ def main():
 
         # Add a "Summarize Questions" button at the end of this column
         if st.button('Summarize Questions'):
-            # Here I'm just selecting the first three questions as a dummy "summarizing" function
-            # Replace this with your actual summarizing function
-            st.session_state['summarized_questions'] = [
-                "What are the potential impacts and ethical considerations of AI in various domains such as the job market, healthcare, transportation, education, privacy, security, and criminal justice? (covers 8 questions)", 
-                "How will AI influence the economy, global geopolitics, and military applications? (covers 2 questions)"
-            ]
+            # If the button is clicked, update the last_action and summarized questions in the session state
+            st.session_state['last_action'] = 'summarize_questions'
+            st.session_state['summarized_questions'] = summarize_questions_gpt(st.session_state['event_database_name'])
 
         # Adding CSS for custom scrollable section
         css='''
@@ -123,6 +132,7 @@ def main():
         st.header('Easy Questions')
         if len(st.session_state['event_name'])>0:
             if st.button('Suggest Easy Questions'):
+                st.session_state['last_action'] = 'easy_questions'
                 st.session_state['easy_questions'] += st.session_state['eventdb'].get_random_questions()
                 # make sure there is no overlap between the easy and hard questions
                 if st.session_state['difficult_questions'] is not None:
@@ -140,6 +150,7 @@ def main():
         st.header('Difficult Questions')
         if len(st.session_state['event_name'])>0:
             if st.button('Suggest Difficult Questions'):
+                st.session_state['last_action'] = 'hard_questions'
                 st.session_state['difficult_questions'] += st.session_state['eventdb'].get_random_questions()
                 # make sure there is no overlap between the easy and hard questions
                 if st.session_state['easy_questions'] is not None:
@@ -157,7 +168,7 @@ def main():
     if len(st.session_state['event_name'])>0:
         if not st.session_state['eventdb'].is_db_empty():
             most_influential = st.session_state['eventdb'].get_most_influential_question()
-            st.markdown(f"**{most_influential[2]}**")
+            st.markdown(f"**{most_influential[2].strip()}**")
             st.markdown(f"by **{most_influential[0]}** with **{most_influential[1]}** followers")
         else:
             st.markdown('No questions have been asked yet.')
