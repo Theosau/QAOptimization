@@ -19,7 +19,6 @@ from database_class import EventDatabase
 
 def parse_question_string(question_string):
     summary_questions = re.findall(r"Question \d+: (.*? \(covering \d+ questions\))\n?", question_string)
-    # re.findall(r"Question \d+: (.*? \(covering \d+ questions\))", question_string)
     easy_questions = re.findall(r"Easiest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)\n", question_string)
     hard_questions = re.findall(r"Hardest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)(?:\n|$)", question_string)
     print(summary_questions)
