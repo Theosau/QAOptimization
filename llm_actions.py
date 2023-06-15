@@ -1,4 +1,4 @@
-import os
+import os, re
 from dotenv import load_dotenv
 
 from langchain.chat_models import ChatOpenAI
@@ -17,77 +17,86 @@ from langchain.schema import (
 
 from database_class import EventDatabase
 
+def parse_question_string(question_string):
+    summary_questions = re.findall(r"Question \d+: (.*?) \(covering \d+ questions\)", question_string)
+    easy_questions = re.findall(r"Easiest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)\n", question_string)
+    hard_questions = re.findall(r"Hardest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)(?:\n|$)", question_string)
+    print(summary_questions)
+    print()
+    print(easy_questions)
+    print()
+    print(hard_questions)
+    return summary_questions, [q for q in easy_questions[0] if q], [q for q in hard_questions[0] if q]
 
-def summarize_questions_gpt(event_database_name):
+def summarize_questions_gpt(event_database_name, event_name):
     print('in summarize')
-    qs_formatted = [
-        "What will be the impact of AI on various industries, including mechanical engineering, finance, education, healthcare, and climate change mitigation? (5)",
-        "In what ways can AI be utilized in the future to address global issues such as poverty, economic disparity, space exploration, and understanding the universe? (5)"
+    summary_questions = [
+        "What are the potential impacts of AI in various industries and fields, such as mechanical engineering, finance, education, healthcare, climate change mitigation, poverty reduction, and space exploration?",
+        "What are the ethical considerations and strategies needed to ensure job security and prevent mass unemployment in light of AI advancements?"
     ]
-    return qs_formatted
-    # # set up openai api key, model
-    # load_dotenv()  # take environment variables from .env.
-    # OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-    # chat = ChatOpenAI(
-    #     model_name="gpt-3.5-turbo",
-    #     temperature=0.7,
-    #     openai_api_key=OPENAI_API_KEY
-    # )
+    easy_questions = [
+        "How will AI impact mechanical engineering?",
+        "What potential does AI have in revolutionizing the healthcare industry, particularly in areas of disease prediction and diagnosis?"
+    ]
+    hard_questions = [
+        "What are the prospects of AI surpassing human intelligence, and what would be its implications?",
+        "How can AI be harnessed in the future to better tackle global poverty and economic disparity?"
+    ]
+    return summary_questions, easy_questions, hard_questions
+ 
+#     # set up openai api key, model
+#     load_dotenv()  # take environment variables from .env.
+#     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+#     chat = ChatOpenAI(
+#         model_name="gpt-3.5-turbo",
+#         temperature=0.7,
+#         openai_api_key=OPENAI_API_KEY
+#     )
 
-    # # set up the prompt template for the specific application
-    # system_message=SystemMessage(
-    #     content="You are a helpful assistant that works in event management." + \
-    #     "Your role is to take care of any queries concerning Q&A sessions."
-    # )
-    # summarize_template="We received a list of questions from our Q&A." + \
-    #     "Make sure to read them with attention and understand them. Then summarize these questions into 2 new questions." + \
-    #     "Mention how many questions are covered by each new question." + \
-    #     "You answer should look like: question 1 (number of questions covered), question 2 (number of questions covered)." + \
-    #     "Do not add any other text and do not simply paraphrase the questions." + \
-    #     "Here is the inital questions list: {questions}."
-    # human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
+#     # set up the prompt template for the specific application
+#     system_message=SystemMessage(
+#         content="You are a helpful assistant that works in event management. Your role is to take care of analyze all the queestions in Q&A sessions."
+#     )
 
-    # # list the messages
-    # messages = [
-    #     system_message,
-    #     human_message_prompt,
-    # ]
-    # chat_prompt = ChatPromptTemplate.from_messages(messages)
+#     summarize_template = """
+# We received a list of questions from our Q&A on The Future of AI, presented by Gary Marcus.
+# Make sure to read them with attention and understand them. Then summarize these questions into 2 new questions. These 2 questions should not simply paraphrase the question list, but provide a summary. Mention how many questions they each cover, these numbers must be >1.
+# Addtionally, provide the 2 easiest and the 2 hardest questions from the initial list. A hard question requires a deep understanding of various concepts, or challenge the views of the presenter.
+# You answer should look like (do not add anything else): 
+
+# Question 1: question (covering n questions)
+# Question 2: question (covering n questions)
+# Easiest questions:
+# Question 1: question
+# Question 2: question
+# Hardest questions:
+# Question 1: question
+# Question 2: question
+
+# Here is the inital questions list: {questions}
+#     """
+
+#     human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
+
+#     # list the messages
+#     messages = [
+#         system_message,
+#         human_message_prompt,
+#     ]
+#     chat_prompt = ChatPromptTemplate.from_messages(messages)
     
-    # # gather the questions from the database
-    # # event_database_name = 'TheFutureofAI'
-    # eventdb = EventDatabase(event_database_name)
-    # questions = eventdb.get_questions_from_db()
-    # event_questions = " ".join(questions)
+#     # gather the questions from the database
+#     # event_database_name = 'TheFutureofAI'
+#     eventdb = EventDatabase(event_database_name)
+#     questions = eventdb.get_questions_from_db()
+#     event_questions = " ".join(questions)
     
-    # # get a chat completion from the formatted messages
-    # chain = LLMChain(llm=chat, prompt=chat_prompt)
-    # llm_output = chain.run(questions=event_questions)
-    # print(llm_output)
+#     # get a chat completion from the formatted messages
+#     chain = LLMChain(llm=chat, prompt=chat_prompt)
+#     llm_output = chain.run(questions=event_questions)
+#     print(llm_output)
+#     # llm_output_without_empty_lines = '\n'.join([line for line in llm_output.splitlines() if line.strip()])
+#     # print(llm_output_without_empty_lines)
+#     summary_questions, easy_questions, hard_questions = parse_question_string(llm_output)
 
-    # # Split the input_data by newlines to create a list
-    # qs_list = llm_output.strip().split('\n')
-    # # Initialize an empty list to hold the output
-    # qs_formatted = []
-
-    # # Iterate over each element in the list
-    # for i in qs_list:
-    #     try:
-    #         # Split each line into two parts: the question number and the question text
-    #         question_num, question_text = i.split(': ', 1)
-    #         # Extract the difficulty level from the question number
-    #         num_covered = question_num[-2:-1]
-    #         # Create the desired format and append to output_list
-    #         qs_formatted.append(f"{question_text} ({num_covered})")
-    #     except:
-    #         continue
-
-
-    # # llm_output = chain.run(questions=
-    # #                        "What is the future of AI?, Will AI impact healthcare?, Will AI destroy humanity?"+\
-    # #                        "Who are the big actors in AI? Who is known to have the best foundation models?"+\
-    # #                        "Can anyone enter AI research from scratch?, What books should I read to get up to date with AI?"
-    # # )
-    # # print(llm_output)
-
-    # return qs_formatted
+#     return summary_questions, easy_questions, hard_questions

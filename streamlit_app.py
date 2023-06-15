@@ -11,7 +11,8 @@ def check_overlapping_questions(new_list, existing_list):
 
 def main():
     st.set_page_config(layout="wide")  # Add this line
-    st.title('Event Q&A Streamlining App')
+    # st.title('Event Q&A Streamlining App')
+    st.markdown("<h1 style='text-align: center; color: black;'>Event Q&A Streamlining App</h1>", unsafe_allow_html=True)
 
     # Create the session state variables if they don't exist
     if 'eventdb' not in st.session_state:
@@ -44,6 +45,12 @@ def main():
     # Before you define your button, check if the 'last_action' is not in the session state
     if 'last_action' not in st.session_state:
         st.session_state['last_action'] = None
+
+    if 'easy_button_counter' not in st.session_state:
+        st.session_state['easy_button_counter'] = 0
+
+    if 'hard_button_counter' not in st.session_state:
+        st.session_state['hard_button_counter'] = 0
 
     # Create the session state variables if they don't exist
     if not st.session_state['eventdb']:
@@ -82,10 +89,13 @@ def main():
         st.header('Questions Received')
 
         # Add a "Summarize Questions" button at the end of this column
-        if st.button('Summarize Questions'):
+        if st.button('Read and Summarize Questions'):
             # If the button is clicked, update the last_action and summarized questions in the session state
             st.session_state['last_action'] = 'summarize_questions'
-            st.session_state['summarized_questions'] = summarize_questions_gpt(st.session_state['event_database_name'])
+            st.session_state['summarized_questions'], st.session_state['easy_questions'], st.session_state['difficult_questions'] = summarize_questions_gpt(
+                st.session_state['event_database_name'],
+                st.session_state['event_name']
+            )
 
         # Adding CSS for custom scrollable section
         css='''
@@ -133,15 +143,17 @@ def main():
         if len(st.session_state['event_name'])>0:
             if st.button('Suggest Easy Questions'):
                 st.session_state['last_action'] = 'easy_questions'
-                st.session_state['easy_questions'] += st.session_state['eventdb'].get_random_questions()
+                st.session_state['easy_button_counter'] += 1
+                # st.session_state['easy_questions'] += st.session_state['eventdb'].get_random_questions()
                 # make sure there is no overlap between the easy and hard questions
                 if st.session_state['difficult_questions'] is not None:
                     st.session_state['easy_questions'] = check_overlapping_questions(
                         st.session_state['easy_questions'],
                         st.session_state['difficult_questions']
                     )
-            for question in st.session_state['easy_questions']:
-                st.markdown(f'- {question}')
+            if st.session_state['easy_button_counter']>0:
+                for question in st.session_state['easy_questions']:
+                    st.markdown(f'- {question}')
         else:
             st.markdown('The event has not been named yet.')
 
@@ -151,15 +163,17 @@ def main():
         if len(st.session_state['event_name'])>0:
             if st.button('Suggest Difficult Questions'):
                 st.session_state['last_action'] = 'hard_questions'
-                st.session_state['difficult_questions'] += st.session_state['eventdb'].get_random_questions()
+                st.session_state['hard_button_counter'] += 1
+                # st.session_state['difficult_questions'] += st.session_state['eventdb'].get_random_questions()
                 # make sure there is no overlap between the easy and hard questions
                 if st.session_state['easy_questions'] is not None:
                     st.session_state['difficult_questions'] = check_overlapping_questions(
                         st.session_state['difficult_questions'],
                         st.session_state['easy_questions']
                     )
-            for question in st.session_state['difficult_questions']:
-                st.markdown(f'- {question}')
+            if st.session_state['hard_button_counter']>0:
+                for question in st.session_state['difficult_questions']:
+                    st.markdown(f'- {question}')
         else:
             st.markdown('The event has not been named yet.')
 
