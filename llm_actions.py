@@ -31,8 +31,8 @@ def parse_question_string(question_string):
 def summarize_questions_gpt(event_database_name, event_name):
     print('in summarize')
     summary_questions = [
-        "What are the potential impacts of AI in various industries and fields, such as mechanical engineering, finance, education, healthcare, climate change mitigation, poverty reduction, and space exploration?",
-        "What are the ethical considerations and strategies needed to ensure job security and prevent mass unemployment in light of AI advancements?"
+        "What are the potential impacts of AI in various industries and fields, such as mechanical engineering, finance, education, healthcare, climate change mitigation, poverty reduction, and space exploration? (covering 9 questions)",
+        "What are the ethical considerations and strategies needed to ensure job security and prevent mass unemployment in light of AI advancements? (covering 2 questions)"
     ]
     easy_questions = [
         "How will AI impact mechanical engineering?",
