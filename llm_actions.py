@@ -28,7 +28,7 @@ def parse_question_string(question_string):
     print(hard_questions)
     return summary_questions, [q for q in easy_questions[0] if q], [q for q in hard_questions[0] if q]
 
-def summarize_questions_gpt(event_database_name, event_name, event_presenter, use_model=True):
+def summarize_questions_gpt(event_database_name, event_name, event_presenter, use_model=False):
     print('in summarize')
     if not use_model:
         summary_questions = [

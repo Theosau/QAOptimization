@@ -59,7 +59,7 @@ def main():
         with st.form(key='event_name_form'):
             event_name = st.text_input("Please enter your event name:")
             event_presenter = st.text_input("Please enter the presenter name:")
-            event_name_button = st.form_submit_button(label='Provide Event Name')
+            event_name_button = st.form_submit_button(label='Provide Event Information')
         if event_name_button:
             st.session_state['last_action'] = 'event_name'
             st.success('Provided event name successfully')
@@ -196,9 +196,6 @@ def main():
             st.markdown(f"by **{most_influential[0]}** with **{most_influential[1]}** followers")
         else:
             st.markdown('No questions have been asked yet.')
-        
-    else:
-        st.markdown("Plead enter the event and presenter names.")
 
 if __name__ == "__main__":
     main()
