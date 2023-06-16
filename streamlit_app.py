@@ -60,7 +60,7 @@ def main():
             event_name = st.text_input("Please enter your event name:")
             event_presenter = st.text_input("Please enter the presenter name:")
             event_name_button = st.form_submit_button(label='Provide Event Information')
-        if event_name_button:
+        if event_name_button and len(event_name)>0 and len(event_presenter)>0:
             st.session_state['last_action'] = 'event_name'
             st.success('Provided event name successfully')
             event_database_name = event_name.replace(" ", "")
@@ -68,13 +68,15 @@ def main():
             st.session_state['event_name'] = event_name
             st.session_state['event_database_name'] = event_database_name
             st.session_state['event_presenter'] = event_presenter
-            st.experimental_rerun()
+            st.experimental_rerun() # remove the form and add the subheader
+        elif event_name_button:
+            st.warning('Please fill in both the event name and presenter fields before submitting.')
     else:
         eventdb = st.session_state['eventdb']
         st.subheader(f"Q&A: {st.session_state['event_name']}, by {st.session_state['event_presenter']}")
 
 
-    if not(st.session_state['event_name']==''):
+    if len(st.session_state['event_name'])>0:
         st.markdown(':blue[_Participant_] _view_.')
         with st.form(key='question_form', clear_on_submit=True):
             # Use columns to create a row of input fields
