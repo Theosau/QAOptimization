@@ -37,16 +37,21 @@ def participant_page():
         # Get all items in the "events" directory
         items = os.listdir('./events/')
         # Filter the list to only include ".sqlite" files
-        event_name_files = [item.split('.')[0] for item in items if item.endswith('.sqlite')]
+        event_name_files = [item.split('.')[0].replace("_", " ") for item in items if item.endswith('.sqlite')]
+
         # Add the placeholder string to the beginning of the list
         event_name_files.insert(0, 'Select a file...')
-        selected_file = st.selectbox('What event are you participating in?', event_name_files) 
+        selected_file = st.selectbox('What event are you participating in?', event_name_files)
+        # When processing the selection, replace spaces back with underscores
+        if selected_file != 'Select a file...':
+            selected_file = selected_file.replace(" ", "_")
         st.session_state['participant_event_database_name'] = selected_file
         if selected_file != 'Select a file...':
             st.session_state['participant_eventdb'] = EventDatabase(st.session_state['participant_event_database_name'])
             st.experimental_rerun() # remove the form and add the subheader
     else:
-        st.subheader(f"Q&A: {st.session_state['participant_event_database_name']}")
+        event_name = st.session_state['participant_event_database_name'].replace("_", " ")
+        st.subheader(f"Q&A: {event_name}")
         eventdb = st.session_state['participant_eventdb']
         if st.session_state['num_questions_asked'] == 0:
             with st.form(key='question_form', clear_on_submit=True):
@@ -94,7 +99,25 @@ def participant_page():
                 )
                 st.session_state['num_questions_asked'] += 1
                 num_counts = st.session_state['num_questions_asked']
+            
+            st.session_state['person_question_list'] = st.session_state['participant_eventdb'].get_questions_from_db(person_name=st.session_state['name_input'])
+            num_counts = len(st.session_state['person_question_list'])
             st.success(f'Question {num_counts} submitted successfully')
+
+            # Adding CSS for custom scrollable section
+            css='''
+            <style>
+            [data-testid="stExpander"] .streamlit-expanderHeader, [data-testid="stExpander"] .streamlit-expanderContent {
+                overflow: auto;
+                max-height: 300px;
+            }
+            </style>
+            '''
+            st.markdown(css, unsafe_allow_html=True)
+            tstring = f"See questions"
+            with st.expander(tstring):  
+                for question in st.session_state['person_question_list']:
+                    st.markdown(f'- {question}')
 
 if __name__ == "__main__":
     participant_page()

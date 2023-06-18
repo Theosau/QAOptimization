@@ -27,10 +27,13 @@ class EventDatabase():
         conn.close()
         return
 
-    def get_questions_from_db(self):
+    def get_questions_from_db(self, person_name=None):
         conn = sqlite3.connect(self.final_path + '.sqlite')
         c = conn.cursor()
-        questions = [item[0] for item in c.execute('SELECT question FROM questions').fetchall()] # Only getting the question here
+        if person_name:
+            questions = [item[0] for item in c.execute('SELECT question FROM questions WHERE name=?', (person_name,)).fetchall()]
+        else:
+            questions = [item[0] for item in c.execute('SELECT question FROM questions').fetchall()] # Only getting the question here
         conn.close()
         return questions
 

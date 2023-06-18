@@ -61,7 +61,7 @@ def host_page():
         if event_name_button and len(event_name)>0 and len(event_presenter)>0:
             st.session_state['last_action'] = 'host_event_name'
             st.success('Provided event name successfully')
-            event_database_name = event_name.replace(" ", "")
+            event_database_name = (event_name + ' by ' + event_presenter).replace(" ", "_")
             st.session_state['host_eventdb'] = EventDatabase(event_database_name)
             st.session_state['host_event_name'] = event_name
             st.session_state['host_event_database_name'] = event_database_name
@@ -71,7 +71,8 @@ def host_page():
             st.warning('Please fill in both the event name and presenter fields before submitting.')
     else:
         eventdb = st.session_state['host_eventdb']
-        st.subheader(f"Q&A: {st.session_state['host_event_name']}, by {st.session_state['host_event_presenter']}")
+        event_name = st.session_state['host_event_database_name'].replace("_", " ")
+        st.subheader(f"Q&A: {event_name}")
 
     if len(st.session_state['host_event_name'])>0:
         # Set up the layout with two columns
