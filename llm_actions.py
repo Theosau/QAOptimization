@@ -86,7 +86,6 @@ Here is the inital questions list: {questions}
         chat_prompt = ChatPromptTemplate.from_messages(messages)
         
         # gather the questions from the database
-        # event_database_name = 'TheFutureofAI'
         eventdb = EventDatabase(event_database_name)
         questions = eventdb.get_questions_from_db()
         event_questions = " ".join(questions)
