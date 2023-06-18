@@ -60,10 +60,12 @@ def summarize_questions_gpt(event_database_name, event_name, event_presenter, us
         )
 
         summarize_template = """
-We received a list of questions from our Q&A on {name} presented by {presenter}.
-Make sure to read them with attention and understand them. Then summarize these questions into 2 new questions. These 2 questions should not simply paraphrase the question list, but provide a summary. Mention how many questions they each cover, these numbers must be >1.
-Addtionally, provide the 2 easiest and the 2 hardest questions from the initial list. A hard question requires a deep understanding of various concepts, or challenge the views of the presenter.
-You answer should look like (do not add anything else): 
+Given the list of questions from our Q&A on {presenter}'s {name}, synthesize two succinct and overarching questions. These questions should encapsulate the core themes of the initial list without merely listing or paraphrasing them. In addition, determine the two simplest questions, based on their straight-forwardness and specificity, and the two most challenging questions, based on their breadth or potential to challenge the presenter's views.
+Make sure to mention how many of the initial questions are covered by each new question.
+
+Initial questions list: {questions}
+
+Your response should only include:
 
 Question 1: question (covering n questions)
 Question 2: question (covering n questions)
@@ -74,7 +76,7 @@ Hardest questions:
 Question 1: question
 Question 2: question
 
-Here is the inital questions list: {questions}
+Note: The newly synthesized questions should not be a simple enumeration or paraphrasing of the original questions but should capture their essence in a concise and novel manner. Make sure to mention the total count of questions covered by each new question at their end.
 """
         human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
 
