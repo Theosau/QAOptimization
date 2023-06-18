@@ -61,7 +61,6 @@ def summarize_questions_gpt(event_database_name, event_name, event_presenter, us
 
         summarize_template = """
 Given the list of questions from our Q&A on {presenter}'s {name}, synthesize two succinct and overarching questions. These questions should encapsulate the core themes of the initial list without merely listing or paraphrasing them. In addition, determine the two simplest questions, based on their straight-forwardness and specificity, and the two most challenging questions, based on their breadth or potential to challenge the presenter's views.
-Make sure to mention how many of the initial questions are covered by each new question.
 
 Initial questions list: {questions}
 
