@@ -92,17 +92,6 @@ def host_page():
 
     if len(st.session_state['host_event_name'])>0:
         if st.session_state["event_categories"]==0:
-            # Adding CSS for custom scrollable section
-            css='''
-            <style>
-            [data-testid="stExpander"] .streamlit-expanderHeader, [data-testid="stExpander"] .streamlit-expanderContent {
-                overflow: auto;
-                max-height: 300px;
-            }
-            </style>
-            '''
-            st.markdown(css, unsafe_allow_html=True)
-
             # Create a container for the questions
             st.session_state['question_list'] = st.session_state['host_eventdb'].get_questions_from_db()
             if  len(st.session_state['question_list'])>0:
