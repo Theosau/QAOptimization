@@ -51,6 +51,8 @@ def host_page():
     if 'hard_button_counter' not in st.session_state:
         st.session_state['hard_button_counter'] = 0
 
+    if 'event_categories' not in st.session_state:
+        st.session_state['event_categories'] = 0
 
     # Create the session state variables if they don't exist
     if not st.session_state['host_eventdb']:
@@ -75,60 +77,81 @@ def host_page():
         st.subheader(f"Q&A: {event_name}")
 
     if len(st.session_state['host_event_name'])>0:
-        # Set up the layout with two columns
-        col1, col2 = st.columns(2)    
-        # Display the questions received in the left column
-        with col1:
-            st.header('Questions Received')
-            if not st.session_state['host_eventdb'].is_db_empty():
-                # Add a "Summarize Questions" button at the end of this column
-                if st.button('Read and Summarize Questions'):
-                    # If the button is clicked, update the last_action and summarized questions in the session state
-                    st.session_state['last_action'] = 'summarize_questions'
-                    st.session_state['summarized_questions'], st.session_state['easy_questions'], st.session_state['difficult_questions'] = summarize_questions_gpt(
-                        st.session_state['host_event_database_name'],
-                        st.session_state['host_event_name'], 
-                        st.session_state['host_event_presenter']
-                    )
+        if st.session_state["event_categories"]==0:
+            # Adding CSS for custom scrollable section
+            css='''
+            <style>
+            [data-testid="stExpander"] .streamlit-expanderHeader, [data-testid="stExpander"] .streamlit-expanderContent {
+                overflow: auto;
+                max-height: 300px;
+            }
+            </style>
+            '''
+            st.markdown(css, unsafe_allow_html=True)
 
-                # Adding CSS for custom scrollable section
-                css='''
-                <style>
-                [data-testid="stExpander"] .streamlit-expanderHeader, [data-testid="stExpander"] .streamlit-expanderContent {
-                    overflow: auto;
-                    max-height: 300px;
-                }
-                </style>
-                '''
-                st.markdown(css, unsafe_allow_html=True)
-
-                # Create a container for the questions
-                st.session_state['question_list'] = st.session_state['host_eventdb'].get_questions_from_db()
-                if  len(st.session_state['question_list'])>0:
-                    num_questions = len(st.session_state['question_list'])
-                    tstring = f"See questions (Total: {num_questions})"
-                else:
-                    tstring = "No questions have been asked yet."
-                with st.expander(tstring):  
-                    for question in st.session_state['question_list']:
-                        st.markdown(f'- {question}')
+            # Create a container for the questions
+            st.session_state['question_list'] = st.session_state['host_eventdb'].get_questions_from_db()
+            if  len(st.session_state['question_list'])>0:
+                num_questions = len(st.session_state['question_list'])
+                tstring = f"See questions (Total: {num_questions})"
             else:
-                st.markdown('No questions have been asked yet.')
-        
-        # Display the summarized questions in the right column
-        with col2:
-            st.header('Summarized Questions')
-            if len(st.session_state['summarized_questions'])>0:
-                for question in st.session_state['summarized_questions']:
+                tstring = "No questions have been asked yet."
+                st.markdown(tstring)
+            with st.expander(tstring):  
+                for question in st.session_state['question_list']:
                     st.markdown(f'- {question}')
+            
+            # button to categorize the questions
+            if len(st.session_state['question_list'])>10:
+                if st.button("Categorize questions"):
+                    st.session_state["event_categories"] = [
+                        "Climate Policy Implementation and Enforcement", 
+                        "Business Incentives and Global Challenges",
+                        "Other",
+                        "Off topic"
+                    ]
             else:
-                st.markdown("No questions have been summarized yet.")
+                st.markdown("When there will be more than 10 questions, you will have the option to categorize and summarize them.")
+        else:
+            # Set up the layout with two columns
+            col0_cat0, col1_cat0, col2_cat0 = st.columns(3)
 
+            # Display the questions received in the left column
+            with col0_cat0:
+                st.markdown(st.session_state["event_categories"][0])
+            with col1_cat0:
+                with st.expander("Expand questions"):  
+                    for question in ["Question 0", "Question 1"]:
+                        st.markdown(f'- {question}')
+                # Add a "Summarize Questions" button at the end of this column
+            with col2_cat0:
+                if st.button('Summarize_Cat0'):
+                    st.session_state['last_action'] = 'summarize_questions_cat0'
+        
+            st.divider()
+
+            # Set up the layout with two columns
+            col0_cat1, col1_cat1, col2_cat1 = st.columns(3)
+
+            # Display the questions received in the left column
+            with col0_cat1:
+                st.markdown(st.session_state["event_categories"][1])
+            with col1_cat1:
+                with st.expander("Expand questions"):  
+                    for question in ["Question 0", "Question 1"]:
+                        st.markdown(f'- {question}')
+                # Add a "Summarize Questions" button at the end of this column
+            with col2_cat1:
+                if st.button('Summarize_Cat1'):
+                    st.session_state['last_action'] = 'summarize_questions_cat1'
+
+        #### Easy, hard, influential - not impacted by categorization 
+        # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns
-        col3, col4 = st.columns(2)
+        col_easy, col_hard = st.columns(2)
 
         # Display the easy questions in the second column
-        with col3:
+        with col_easy:
             st.header('Easy Questions')
             if not st.session_state['host_eventdb'].is_db_empty():
                 if len(st.session_state["summarized_questions"])>0:
@@ -145,12 +168,12 @@ def host_page():
                         for question in st.session_state['easy_questions']:
                             st.markdown(f'- {question}')
                 else:
-                    st.markdown('Requesting easy questions will be available after summarization.')
+                    st.markdown('Requesting easy questions will be available after categorization.')
             else:
                 st.markdown('No questions have been asked yet.')
 
         # Display the difficult questions in the third column
-        with col4:
+        with col_hard:
             st.header('Difficult Questions')
             if not st.session_state['host_eventdb'].is_db_empty():
                 if len(st.session_state["summarized_questions"])>0:
@@ -167,7 +190,7 @@ def host_page():
                         for question in st.session_state['difficult_questions']:
                             st.markdown(f'- {question}')
                 else:
-                    st.markdown('Requesting difficult questions will be available after summarization.')
+                    st.markdown('Requesting difficult questions will be available after categorization.')
             else:
                 st.markdown('No questions have been asked yet.')
 
