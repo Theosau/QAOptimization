@@ -1,7 +1,6 @@
 import streamlit as st
 from database_class import EventDatabase
-from llm_actions import summarize_questions_gpt
-
+from llm_actions import suggest_easy_hard_questions, suggest_categories, categorize_questions
 
 def check_overlapping_questions(new_list, existing_list):
     new_list_set = set(new_list)
@@ -38,8 +37,8 @@ def host_page():
     if 'easy_questions' not in st.session_state:
         st.session_state['easy_questions'] = []
 
-    if 'difficult_questions' not in st.session_state:
-        st.session_state['difficult_questions'] = []
+    if 'hard_questions' not in st.session_state:
+        st.session_state['hard_questions'] = []
 
     # Before you define your button, check if the 'last_action' is not in the session state
     if 'last_action' not in st.session_state:
@@ -52,7 +51,22 @@ def host_page():
         st.session_state['hard_button_counter'] = 0
 
     if 'event_categories' not in st.session_state:
-        st.session_state['event_categories'] = 0
+        st.session_state['event_categories'] = []
+
+    if 'questions_cat0' not in st.session_state:
+        st.session_state['questions_cat0'] = []
+
+    if 'questions_cat1' not in st.session_state:
+        st.session_state['questions_cat1'] = []
+
+    if 'questions_cat2' not in st.session_state:
+        st.session_state['questions_cat2'] = []
+
+    if 'questions_cat3' not in st.session_state:
+        st.session_state['questions_cat3'] = []
+
+    if 'use_model' not in st.session_state:
+        st.session_state['use_model'] = False
 
     # Create the session state variables if they don't exist
     if not st.session_state['host_eventdb']:
@@ -102,16 +116,31 @@ def host_page():
                     st.markdown(f'- {question}')
             
             # button to categorize the questions
-            if len(st.session_state['question_list'])>10:
+            threshold_num_questions = 10
+            if len(st.session_state['question_list'])>=threshold_num_questions:
                 if st.button("Categorize questions"):
-                    st.session_state["event_categories"] = [
-                        "Climate Policy Implementation and Enforcement", 
-                        "Business Incentives and Global Challenges",
-                        "Other",
-                        "Off topic"
-                    ]
+                    if st.session_state["use_model"]:
+                        st.session_state["event_categories"] = suggest_categories(
+                            st.session_state['question_list']
+                        )
+                        questions_categories = categorize_questions(st.session_state['question_list'])
+                        st.session_state['host_eventdb'].add_questions_category(
+                            st.session_state['question_list'], 
+                            questions_categories
+                        )
+                        for i in range(4):
+                            st.session_state[f'questions_cat{i}'] = st.session_state['host_eventdb'].get_questions_in_category(
+                                st.session_state["event_categories"][i]
+                            )
+                    else:
+                        st.session_state["event_categories"] = [
+                            "Climate Policy Implementation and Enforcement", 
+                            "Business Incentives and Global Challenges",
+                            "Other",
+                            "Off topic"
+                        ]
             else:
-                st.markdown("When there will be more than 10 questions, you will have the option to categorize and summarize them.")
+                st.markdown(f"When there will be more than {threshold_num_questions} questions, you will have the option to categorize and summarize them.")
         else:
             # Set up the layout with two columns
             col0_cat0, col1_cat0, col2_cat0 = st.columns(3)
@@ -149,48 +178,75 @@ def host_page():
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns
         col_easy, col_hard = st.columns(2)
-
-        # Display the easy questions in the second column
+        threshold_easy_hard_questions = 4
         with col_easy:
-            st.header('Easy Questions')
+            st.header('Straightforward')
             if not st.session_state['host_eventdb'].is_db_empty():
-                if len(st.session_state["summarized_questions"])>0:
-                    if st.button('Suggest Easy Questions'):
+                if len(st.session_state["question_list"])>=threshold_easy_hard_questions:
+                    if st.button('Suggest Questions', key='Suggest_Straightforward_Questions'):
                         st.session_state['last_action'] = 'easy_questions'
                         st.session_state['easy_button_counter'] += 1
+                        if len(st.session_state['easy_questions'])==0:
+                            if st.session_state["use_model"]:
+                                st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
+                                    st.session_state['question_list']
+                                )
+                            else:
+                                st.session_state['easy_questions'] = [
+                                    "Template simple 0", 
+                                    "Template simple 1"
+                                ]
+                                st.session_state['hard_questions'] = [
+                                    "Template complex 0", 
+                                    "Template complex 1"
+                                ]
                         # make sure there is no overlap between the easy and hard questions
-                        if st.session_state['difficult_questions'] is not None:
+                        if len(st.session_state['hard_questions'])>0:
                             st.session_state['easy_questions'] = check_overlapping_questions(
                                 st.session_state['easy_questions'],
-                                st.session_state['difficult_questions']
+                                st.session_state['hard_questions']
                             )
                     if st.session_state['easy_button_counter']>0:
                         for question in st.session_state['easy_questions']:
                             st.markdown(f'- {question}')
                 else:
-                    st.markdown('Requesting easy questions will be available after categorization.')
+                    st.markdown(f'Requesting straightforward questions will be available once there will be more than {threshold_easy_hard_questions} questions.')
             else:
                 st.markdown('No questions have been asked yet.')
 
-        # Display the difficult questions in the third column
+        # Display the challenging questions
         with col_hard:
-            st.header('Difficult Questions')
+            st.header('Challenging')
             if not st.session_state['host_eventdb'].is_db_empty():
-                if len(st.session_state["summarized_questions"])>0:
-                    if st.button('Suggest Difficult Questions'):
+                if len(st.session_state["question_list"])>=threshold_easy_hard_questions:
+                    if st.button('Suggest Questions', key='Suggest_Challenging_Questions'):
                         st.session_state['last_action'] = 'hard_questions'
                         st.session_state['hard_button_counter'] += 1
+                        if len(st.session_state['hard_questions'])==0:
+                            if st.session_state["use_model"]:
+                                st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
+                                    st.session_state['question_list']
+                                )
+                            else:
+                                st.session_state['easy_questions'] = [
+                                    "Template simple 0", 
+                                    "Template simple 1"
+                                ]
+                                st.session_state['hard_questions'] = [
+                                    "Template complex 0", 
+                                    "Template complex 1"
+                                ]
                         # make sure there is no overlap between the easy and hard questions
-                        if st.session_state['easy_questions'] is not None:
-                            st.session_state['difficult_questions'] = check_overlapping_questions(
-                                st.session_state['difficult_questions'],
+                        if len(st.session_state['easy_questions'])>0:
+                            st.session_state['hard_questions'] = check_overlapping_questions(
+                                st.session_state['hard_questions'],
                                 st.session_state['easy_questions']
                             )
                     if st.session_state['hard_button_counter']>0:
-                        for question in st.session_state['difficult_questions']:
+                        for question in st.session_state['hard_questions']:
                             st.markdown(f'- {question}')
                 else:
-                    st.markdown('Requesting difficult questions will be available after categorization.')
+                    st.markdown(f'Requesting challenging questions will be available once there will be more than {threshold_easy_hard_questions} questions.')
             else:
                 st.markdown('No questions have been asked yet.')
 

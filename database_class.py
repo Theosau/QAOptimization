@@ -61,3 +61,18 @@ class EventDatabase():
         random_questions = [item[0] for item in c.execute('SELECT question FROM questions ORDER BY RANDOM() LIMIT 2')]
         conn.close()
         return random_questions
+
+    def add_questions_category(self, questions, categories):
+        conn = sqlite3.connect(self.final_path + '.sqlite')
+        c = conn.cursor()
+        # Update rows with provided categories
+        for (question, category) in zip(questions, categories):
+            c.execute('UPDATE questions SET category = ? WHERE question = ?', (category, question))
+        # Save (commit) the changes and close the connection
+        conn.commit()
+        conn.close()
+        return 
+
+
+    def get_questions_in_category(self):
+        pass

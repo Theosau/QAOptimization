@@ -18,15 +18,17 @@ from langchain.schema import (
 from database_class import EventDatabase
 
 def parse_question_string(question_string):
-    summary_questions = re.findall(r"Question \d+: (.*? \(covering \d+ questions\))\n?", question_string)
+    # summary_questions = re.findall(r"Question \d+: (.*? \(covering \d+ questions\))\n?", question_string)
     easy_questions = re.findall(r"Easiest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)\n", question_string)
     hard_questions = re.findall(r"Hardest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)(?:\n|$)", question_string)
-    print(summary_questions)
-    print()
     print(easy_questions)
     print()
     print(hard_questions)
-    return summary_questions, [q for q in easy_questions[0] if q], [q for q in hard_questions[0] if q]
+    return [q for q in easy_questions[0] if q], [q for q in hard_questions[0] if q]
+
+def parse_categories(answer_string):
+    catergories = re.findall(r"Category \d+: ([\w\s]+)", answer_string)
+    return catergories
 
 def summarize_questions_gpt(event_database_name, event_name, event_presenter, use_model=False):
     print('in summarize')
@@ -98,3 +100,104 @@ Note: The newly synthesized questions should not be a simple enumeration or para
         summary_questions, easy_questions, hard_questions = parse_question_string(llm_output)
 
         return summary_questions, easy_questions, hard_questions
+
+def suggest_categories(event_database_name, event_name, event_presenter):
+    # set up openai api key, model
+    load_dotenv()  # take environment variables from .env.
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    chat = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        temperature=0.7,
+        openai_api_key=OPENAI_API_KEY
+    )
+
+    # set up the prompt template for the specific application
+    system_message=SystemMessage(
+        content="You are a helpful assistant that works in event management. Your role is to define categories from a Q&A session."
+    )
+
+    summarize_template = """
+Given the list of questions from our Q&A on {presenter}'s {name}, categorize the questions into three main group, and a final group with all the other questions.
+Initial questions list: {questions}
+
+Your response should only include:
+
+Category 1: (category): question (covering n questions)
+Category 2: (category): question (covering n questions)
+"""
+    human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
+
+    # list the messages
+    messages = [
+        system_message,
+        human_message_prompt,
+    ]
+    chat_prompt = ChatPromptTemplate.from_messages(messages)
+    
+    # gather the questions from the database
+    eventdb = EventDatabase(event_database_name)
+    questions = eventdb.get_questions_from_db()
+    event_questions = " ".join(questions)
+    
+    # get a chat completion from the formatted messages
+    chain = LLMChain(llm=chat, prompt=chat_prompt)
+    llm_output = chain.run(questions=event_questions, name=event_name, presenter=event_presenter)
+    print(llm_output)
+    easy_questions, hard_questions = parse_question_string(llm_output)
+
+    return easy_questions, hard_questions
+
+
+def suggest_easy_hard_questions(event_database_name, event_name, event_presenter):
+    # set up openai api key, model
+    load_dotenv()  # take environment variables from .env.
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    chat = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        temperature=0.7,
+        openai_api_key=OPENAI_API_KEY
+    )
+
+    # set up the prompt template for the specific application
+    system_message=SystemMessage(
+        content="You are a helpful assistant that works in event management. Your role is to select easy and challenging questions from a Q&A session."
+    )
+
+    summarize_template = """
+Given the list of questions from our Q&A on {presenter}'s {name}, determine the two simplest questions, based on their straight-forwardness and specificity, and the two most challenging questions, based on their breadth or potential to challenge the presenter's views.
+
+Initial questions list: {questions}
+
+Your response should only include:
+
+Easiest questions:
+Question 1: question (explanation)
+Question 2: question (explanation)
+Hardest questions:
+Question 1: question (explanation)
+Question 2: question (explanation)
+"""
+    human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
+
+    # list the messages
+    messages = [
+        system_message,
+        human_message_prompt,
+    ]
+    chat_prompt = ChatPromptTemplate.from_messages(messages)
+    
+    # gather the questions from the database
+    eventdb = EventDatabase(event_database_name)
+    questions = eventdb.get_questions_from_db()
+    event_questions = " ".join(questions)
+    
+    # get a chat completion from the formatted messages
+    chain = LLMChain(llm=chat, prompt=chat_prompt)
+    llm_output = chain.run(questions=event_questions, name=event_name, presenter=event_presenter)
+    print(llm_output)
+    easy_questions, hard_questions = parse_question_string(llm_output)
+
+    return easy_questions, hard_questions
+
+def categorize_questions(questions):
+    pass
