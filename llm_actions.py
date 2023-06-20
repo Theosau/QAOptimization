@@ -17,8 +17,11 @@ from langchain.schema import (
 
 from database_class import EventDatabase
 
+def parse_summary_questions(summary_string):
+    summary_questions = re.findall(r"Question \d+: (.*? \(covering \d+ questions\))(?:\n|$)", summary_string)
+    return summary_questions
+
 def parse_question_string(question_string):
-    # summary_questions = re.findall(r"Question \d+: (.*? \(covering \d+ questions\))\n?", question_string)
     easy_questions = re.findall(r"Easiest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)\n", question_string)
     hard_questions = re.findall(r"Hardest questions:\nQuestion \d+: (.*?)\nQuestion \d+: (.*?)(?:\n|$)", question_string)
     print(easy_questions)
@@ -28,69 +31,62 @@ def parse_question_string(question_string):
 
 def parse_categories(answer_string):
     # catergories = re.findall(r"Category \d+: ([\w\s]+)", answer_string)
-    categories = re.findall(r"Category (\d+): ([\w\s]+?)(?=\n|$)", answer_string)
+    # categories = re.findall(r"Category (\d+): ([\w\s]+?)(?=\n|$)", answer_string)
+    categories = re.findall(r"Category (\d+): ([^\(\n]+)", answer_string)
     categories_dict = {cat[0]:cat[1] for cat in categories}
     return categories_dict
 
 def remove_final_dot(s):
-    return s[:-1] if s.endswith(".") else s
+    return s[:-1] if (s.endswith(".") or s[-1]==',') else s
 
 def parse_questions_categories(numbers_string):
     numbers_string = remove_final_dot(numbers_string)
     numbers_list = [int(num) for num in numbers_string.split(',')]
     return numbers_list
 
-def summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False):
+def summarize_questions_gpt(category_questions, event_name, event_presenter):
     print('in summarize')
-    if not use_model:
-        summary_questions = [
-            "What are the potential impacts of AI in various industries and fields, such as mechanical engineering, finance, education, healthcare, climate change mitigation, poverty reduction, and space exploration? (covering 9 questions)",
-            "What are the ethical considerations and strategies needed to ensure job security and prevent mass unemployment in light of AI advancements? (covering 2 questions)"
-        ]
-        return summary_questions
-    else:
-        # set up openai api key, model
-        load_dotenv()  # take environment variables from .env.
-        OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-        chat = ChatOpenAI(
-            model_name="gpt-3.5-turbo",
-            temperature=0.7,
-            openai_api_key=OPENAI_API_KEY
-        )
+    # set up openai api key, model
+    load_dotenv()  # take environment variables from .env.
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    chat = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        temperature=0.7,
+        openai_api_key=OPENAI_API_KEY
+    )
+    # These questions should encapsulate the core themes of the initial list without merely listing or paraphrasing them.
+    # set up the prompt template for the specific application
+    system_message=SystemMessage(
+        content="You are a helpful assistant that works in event management. Your role is to take care of analyze all the queestions in Q&A sessions."
+    )
 
-        # set up the prompt template for the specific application
-        system_message=SystemMessage(
-            content="You are a helpful assistant that works in event management. Your role is to take care of analyze all the queestions in Q&A sessions."
-        )
-
-        summarize_template = """
-Given the list of questions from our Q&A on {presenter}'s {name}, synthesize two succinct and overarching questions. These questions should encapsulate the core themes of the initial list without merely listing or paraphrasing them. In addition, determine the two simplest questions, based on their straight-forwardness and specificity, and the two most challenging questions, based on their breadth or potential to challenge the presenter's views.
+    summarize_template = """
+Given the list of questions from our Q&A on {presenter}'s {name}, synthesize two succinct and overarching questions.
 
 Initial questions list: {questions}
 
-Your response should only include:
+Please provide your answer following the template below exactly:
 
 Question 1: question (covering n questions)
 Question 2: question (covering n questions)
 
-Note: The newly synthesized questions should not be a simple enumeration or paraphrasing of the original questions but should capture their essence in a concise and novel manner. Make sure to mention the total count of questions covered by each new question at their end.
+Note: The newly synthesized questions should not be a simple enumeration or paraphrasing of the original questions but should capture their essence in a concise and novel manner. Make sure to mention the count of questions covered by each new question at their end.
 """
-        human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
+    human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
 
-        # list the messages
-        messages = [
-            system_message,
-            human_message_prompt,
-        ]
-        chat_prompt = ChatPromptTemplate.from_messages(messages)
-        
-        # get a chat completion from the formatted messages
-        chain = LLMChain(llm=chat, prompt=chat_prompt)
-        llm_output = chain.run(questions=category_questions, name=event_name, presenter=event_presenter)
-        print(llm_output)
-        summary_questions, easy_questions, hard_questions = parse_question_string(llm_output)
-
-        return summary_questions, easy_questions, hard_questions
+    # list the messages
+    messages = [
+        system_message,
+        human_message_prompt,
+    ]
+    chat_prompt = ChatPromptTemplate.from_messages(messages)
+    
+    # get a chat completion from the formatted messages
+    chain = LLMChain(llm=chat, prompt=chat_prompt)
+    llm_output = chain.run(questions=category_questions, name=event_name, presenter=event_presenter)
+    print(llm_output)
+    summary_questions = parse_summary_questions(llm_output)
+    return summary_questions
 
 def suggest_categories(event_database_name, event_name, event_presenter):
     # set up openai api key, model
@@ -113,12 +109,14 @@ Provide a short name for each category.
 
 Initial questions list: {questions}
 
-Please only provide the categories as follows, including the Other category.
+Please only provide the categories respecting the follwoing template exactly and including the Other category.
 
 Category 0: (category)
 Category 1: (category)
 Category 2: (category)
 Category 3: Other
+
+Note: make sure the category number starts at 0.
 """
     human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
 
@@ -216,7 +214,7 @@ Questions: {questions}
 
 Categories: {categories}
 
-Please provide the desired list of integers as a comma-separated string. For example: '1,2,3,4,5'.
+Please provide the desired list of integers as a comma-separated string. For example: '0,1,2,3,4'.
 Do not add anything else to the answer.
 """
     human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)

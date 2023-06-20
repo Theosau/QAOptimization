@@ -1,6 +1,6 @@
 import streamlit as st
 from database_class import EventDatabase
-from llm_actions import suggest_easy_hard_questions, suggest_categories, categorize_questions
+from llm_actions import suggest_easy_hard_questions, suggest_categories, categorize_questions, summarize_questions_gpt
 
 def check_overlapping_questions(new_list, existing_list):
     new_list_set = set(new_list)
@@ -15,59 +15,41 @@ def host_page():
     # Host-related activities go here
     if 'host_eventdb' not in st.session_state:
         st.session_state['host_eventdb'] = None
-
     if 'host_event_name' not in st.session_state:
         st.session_state['host_event_name'] = ''
-
     if 'host_event_database_name' not in st.session_state:
         st.session_state['host_event_database_name'] = ''
-
     if 'host_event_presenter' not in st.session_state:
         st.session_state['host_event_presenter'] = ''
-
     if 'question_list' not in st.session_state:
         st.session_state['question_list'] = []
-
     if 'summarized_questions' not in st.session_state:
         st.session_state['summarized_questions'] = []
-
     if 'influential_questions' not in st.session_state:
         st.session_state['influential_questions'] = []
-
     if 'easy_questions' not in st.session_state:
         st.session_state['easy_questions'] = []
-
     if 'hard_questions' not in st.session_state:
         st.session_state['hard_questions'] = []
-
     # Before you define your button, check if the 'last_action' is not in the session state
     if 'last_action' not in st.session_state:
         st.session_state['last_action'] = None
-
     if 'easy_button_counter' not in st.session_state:
         st.session_state['easy_button_counter'] = 0
-
     if 'hard_button_counter' not in st.session_state:
         st.session_state['hard_button_counter'] = 0
-
     if 'event_categories' not in st.session_state:
         st.session_state['event_categories'] = []
-
     if 'questions_cat0' not in st.session_state:
         st.session_state['questions_cat0'] = []
-
     if 'questions_cat1' not in st.session_state:
         st.session_state['questions_cat1'] = []
-
     if 'questions_cat2' not in st.session_state:
         st.session_state['questions_cat2'] = []
-
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
-
     if 'use_model' not in st.session_state:
         st.session_state['use_model'] = False
-
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
@@ -148,6 +130,7 @@ def host_page():
             else:
                 st.markdown(f"When there will be more than {threshold_num_questions} questions, you will have the option to categorize and summarize them.")
         else:
+            threshold_num_questions_cat = 4
             # Set up the layout with three column per category
             col0_cat0, col1_cat0, col2_cat0 = st.columns(3)
             # Display the questions received in the left column
@@ -159,20 +142,34 @@ def host_page():
                     for question in st.session_state['questions_cat0']:
                         st.markdown(f'- {question}')
             with col2_cat0:
-                if len(st.session_state["summarized_cat0"])==0:
-                    if st.button('Summarize', key='Summarize_Cat0'):
-                        print("summarized_cat0")
-                        st.session_state["summarized_cat0"] = ["Summary Question 0", " Summary Question 1"]
-                        st.experimental_rerun() # update button print
-                        # st.session_state["summarized_cat0"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                if len(st.session_state['questions_cat0']) >= threshold_num_questions_cat:
+                    if len(st.session_state["summarized_cat0"])==0:
+                        if st.button('Summarize', key='Summarize_Cat0'):
+                            print("summarized_cat0")
+                            if st.session_state['use_model']:
+                                st.session_state["summarized_cat0"] = summarize_questions_gpt(
+                                    st.session_state['questions_cat0'],
+                                    st.session_state['host_event_name'],
+                                    st.session_state['host_event_presenter']
+                                )
+                            else:
+                                st.session_state["summarized_cat0"] = [
+                                   "How can climate change policies be effectively implemented on a global scale to address existing challenges and align with the Paris Agreement goals? (covering 3 questions)",
+                                   "What policy changes can be made to drive both large-scale carbon capture and storage technologies and improve biodiversity conservation in the context of climate change? (covering 2 questions)"
+                                ]
+                            st.experimental_rerun() # update button print
+                    else:
+                        with st.expander("Summarized questions"):  
+                            for question in st.session_state["summarized_cat0"]:
+                                st.markdown(f'- {question}')
                 else:
-                    for question in st.session_state["summarized_cat0"]:
-                        st.markdown(f'- {question}')
+                    st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
 
             st.divider()
 
             # Set up the layout with three column per category
             col0_cat1, col1_cat1, col2_cat1 = st.columns(3)
+            threshold_num_questions_cat = 4
             # Display the questions received in the left column
             with col0_cat1:
                 st.markdown(st.session_state["event_categories"][1])
@@ -182,15 +179,25 @@ def host_page():
                     for question in st.session_state['questions_cat1']:
                         st.markdown(f'- {question}')
             with col2_cat1:
-                if len(st.session_state["summarized_cat1"])==0:
-                    if st.button('Summarize', key='Summarize_Cat1'):
-                        print("summarized_cat1")
-                        st.session_state["summarized_cat1"] = ["Summary Question 0", " Summary Question 1"]
-                        st.experimental_rerun() # update button print
-                        # st.session_state["summarized_cat1"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                if len(st.session_state['questions_cat1']) >= threshold_num_questions_cat:
+                    if len(st.session_state["summarized_cat1"])==0:
+                        if st.button('Summarize', key='Summarize_Cat1'):
+                            print("summarized_cat1")
+                            if st.session_state['use_model']:
+                                st.session_state["summarized_cat1"] = summarize_questions_gpt(
+                                    st.session_state['questions_cat1'],
+                                    st.session_state['host_event_name'],
+                                    st.session_state['host_event_presenter']
+                                )
+                            else:
+                                pass
+                            st.experimental_rerun() # update button print
+                    else:
+                        with st.expander("Summarized questions"):
+                            for question in st.session_state["summarized_cat1"]:
+                                st.markdown(f'- {question}')
                 else:
-                    for question in st.session_state["summarized_cat1"]:
-                        st.markdown(f'- {question}')
+                    st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
 
             st.divider()
 
@@ -205,15 +212,25 @@ def host_page():
                     for question in st.session_state['questions_cat2']:
                         st.markdown(f'- {question}')
             with col2_cat2:
-                if len(st.session_state["summarized_cat2"])==0:
-                    if st.button('Summarize', key='Summarize_Cat2'):
-                        print("summarized_cat2")
-                        st.session_state["summarized_cat2"] = ["Summary Question 0", " Summary Question 1"]
-                        st.experimental_rerun() # update button print
-                        # st.session_state["summarized_cat2"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                if len(st.session_state['questions_cat2']) >= threshold_num_questions_cat:
+                    if len(st.session_state["summarized_cat2"])==0:
+                        if st.button('Summarize', key='Summarize_Cat2'):
+                            print("summarized_cat2")
+                            if st.session_state['use_model']:
+                                st.session_state["summarized_cat2"] = summarize_questions_gpt(
+                                    st.session_state['questions_cat2'],
+                                    st.session_state['host_event_name'],
+                                    st.session_state['host_event_presenter']
+                                )
+                            else:
+                                pass
+                            st.experimental_rerun() # update button print
+                    else:
+                        with st.expander("Summarized questions"):
+                            for question in st.session_state["summarized_cat2"]:
+                                st.markdown(f'- {question}')
                 else:
-                    for question in st.session_state["summarized_cat2"]:
-                        st.markdown(f'- {question}')
+                    st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
 
             st.divider()
 
@@ -228,15 +245,28 @@ def host_page():
                     for question in st.session_state['questions_cat3']:
                         st.markdown(f'- {question}')
             with col2_cat3:
-                if len(st.session_state["summarized_cat3"])==0:
-                    if st.button('Summarize', key='Summarize_Cat3'):
-                        print("summarized_cat3")
-                        st.session_state["summarized_cat3"] = ["Summary Question 0", " Summary Question 1"]
-                        st.experimental_rerun() # update button print
-                        # st.session_state["summarized_cat3"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                if len(st.session_state['questions_cat3']) >= threshold_num_questions_cat:
+                    if len(st.session_state["summarized_cat3"])==0:
+                        if st.button('Summarize', key='Summarize_Cat3'):
+                            print("summarized_cat3")
+                            if st.session_state['use_model']:
+                                st.session_state["summarized_cat3"] = summarize_questions_gpt(
+                                    st.session_state['questions_cat3'],
+                                    st.session_state['host_event_name'],
+                                    st.session_state['host_event_presenter']
+                                )
+                            else:
+                                st.session_state["summarized_cat3"] = [
+                                    "How will Joe Biden's climate change policies address the feasibility of transitioning to a circular economy, updating university curriculums, and the impact of climate change on food prices? (covering 3 questions)",
+                                    "What is Joe Biden's stance on governmental contributions to Tesla cars and their role in limiting climate change, and how does this fit into his overall climate change policies? (covering 2 questions)",
+                                  ]
+                            st.experimental_rerun() # update button print
+                    else:
+                        with st.expander("Summarized questions"):
+                            for question in st.session_state["summarized_cat3"]:
+                                st.markdown(f'- {question}')
                 else:
-                    for question in st.session_state["summarized_cat3"]:
-                        st.markdown(f'- {question}')
+                    st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
 
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
