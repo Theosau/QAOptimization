@@ -15,7 +15,7 @@ class EventDatabase():
     def create_table(self):
         conn = sqlite3.connect(self.final_path + '.sqlite')
         c = conn.cursor()
-        c.execute('CREATE TABLE IF NOT EXISTS questions (name TEXT, followers INT, question TEXT)')
+        c.execute('CREATE TABLE IF NOT EXISTS questions (name TEXT, followers INT, question TEXT, category INT)')
         conn.close()
         return
 
@@ -74,5 +74,9 @@ class EventDatabase():
         return 
 
 
-    def get_questions_in_category(self):
-        pass
+    def get_questions_by_category(self, category_num):
+        conn = sqlite3.connect(self.final_path + '.sqlite')
+        c = conn.cursor()
+        questions = [item[0] for item in c.execute('SELECT question FROM questions WHERE category = ?', (category_num,)).fetchall()]
+        conn.close()
+        return questions

@@ -27,25 +27,27 @@ def parse_question_string(question_string):
     return [q for q in easy_questions[0] if q], [q for q in hard_questions[0] if q]
 
 def parse_categories(answer_string):
-    catergories = re.findall(r"Category \d+: ([\w\s]+)", answer_string)
-    return catergories
+    # catergories = re.findall(r"Category \d+: ([\w\s]+)", answer_string)
+    categories = re.findall(r"Category (\d+): ([\w\s]+?)(?=\n|$)", answer_string)
+    categories_dict = {cat[0]:cat[1] for cat in categories}
+    return categories_dict
 
-def summarize_questions_gpt(event_database_name, event_name, event_presenter, use_model=False):
+def remove_final_dot(s):
+    return s[:-1] if s.endswith(".") else s
+
+def parse_questions_categories(numbers_string):
+    numbers_string = remove_final_dot(numbers_string)
+    numbers_list = [int(num) for num in numbers_string.split(',')]
+    return numbers_list
+
+def summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False):
     print('in summarize')
     if not use_model:
         summary_questions = [
             "What are the potential impacts of AI in various industries and fields, such as mechanical engineering, finance, education, healthcare, climate change mitigation, poverty reduction, and space exploration? (covering 9 questions)",
             "What are the ethical considerations and strategies needed to ensure job security and prevent mass unemployment in light of AI advancements? (covering 2 questions)"
         ]
-        easy_questions = [
-            "How will AI impact mechanical engineering?",
-            "What potential does AI have in revolutionizing the healthcare industry, particularly in areas of disease prediction and diagnosis?"
-        ]
-        hard_questions = [
-            "What are the prospects of AI surpassing human intelligence, and what would be its implications?",
-            "How can AI be harnessed in the future to better tackle global poverty and economic disparity?"
-        ]
-        return summary_questions, easy_questions, hard_questions
+        return summary_questions
     else:
         # set up openai api key, model
         load_dotenv()  # take environment variables from .env.
@@ -70,12 +72,6 @@ Your response should only include:
 
 Question 1: question (covering n questions)
 Question 2: question (covering n questions)
-Easiest questions:
-Question 1: question
-Question 2: question
-Hardest questions:
-Question 1: question
-Question 2: question
 
 Note: The newly synthesized questions should not be a simple enumeration or paraphrasing of the original questions but should capture their essence in a concise and novel manner. Make sure to mention the total count of questions covered by each new question at their end.
 """
@@ -88,14 +84,9 @@ Note: The newly synthesized questions should not be a simple enumeration or para
         ]
         chat_prompt = ChatPromptTemplate.from_messages(messages)
         
-        # gather the questions from the database
-        eventdb = EventDatabase(event_database_name)
-        questions = eventdb.get_questions_from_db()
-        event_questions = " ".join(questions)
-        
         # get a chat completion from the formatted messages
         chain = LLMChain(llm=chat, prompt=chat_prompt)
-        llm_output = chain.run(questions=event_questions, name=event_name, presenter=event_presenter)
+        llm_output = chain.run(questions=category_questions, name=event_name, presenter=event_presenter)
         print(llm_output)
         summary_questions, easy_questions, hard_questions = parse_question_string(llm_output)
 
@@ -117,13 +108,17 @@ def suggest_categories(event_database_name, event_name, event_presenter):
     )
 
     summarize_template = """
-Given the list of questions from our Q&A on {presenter}'s {name}, categorize the questions into three main group, and a final group with all the other questions.
+Given the list of questions from our Q&A on {presenter}'s {name}, determine three overarching categories.
+Provide a short name for each category.
+
 Initial questions list: {questions}
 
-Your response should only include:
+Please only provide the categories as follows, including the Other category.
 
-Category 1: (category): question (covering n questions)
-Category 2: (category): question (covering n questions)
+Category 0: (category)
+Category 1: (category)
+Category 2: (category)
+Category 3: Other
 """
     human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
 
@@ -143,10 +138,9 @@ Category 2: (category): question (covering n questions)
     chain = LLMChain(llm=chat, prompt=chat_prompt)
     llm_output = chain.run(questions=event_questions, name=event_name, presenter=event_presenter)
     print(llm_output)
-    easy_questions, hard_questions = parse_question_string(llm_output)
 
-    return easy_questions, hard_questions
-
+    catergories_dict = parse_categories(llm_output)
+    return catergories_dict, llm_output
 
 def suggest_easy_hard_questions(event_database_name, event_name, event_presenter):
     # set up openai api key, model
@@ -165,8 +159,9 @@ def suggest_easy_hard_questions(event_database_name, event_name, event_presenter
 
     summarize_template = """
 Given the list of questions from our Q&A on {presenter}'s {name}, determine the two simplest questions, based on their straight-forwardness and specificity, and the two most challenging questions, based on their breadth or potential to challenge the presenter's views.
+Provide a reasoning and explanation for each selection.
 
-Initial questions list: {questions}
+Question list: {questions}
 
 Your response should only include:
 
@@ -199,5 +194,43 @@ Question 2: question (explanation)
 
     return easy_questions, hard_questions
 
-def categorize_questions(questions):
-    pass
+def categorize_questions(questions_to_categorize, current_categories):
+    # set up openai api key, model
+    load_dotenv()  # take environment variables from .env.
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    chat = ChatOpenAI(
+        model_name="gpt-3.5-turbo",
+        temperature=0.7,
+        openai_api_key=OPENAI_API_KEY
+    )
+
+    # set up the prompt template for the specific application
+    system_message=SystemMessage(
+        content="You are a helpful assistant that works in event management. Your role is to categorise questions from a Q&A session."
+    )
+
+    summarize_template = """
+Please categorize each question by assigning it a category number.
+
+Questions: {questions}
+
+Categories: {categories}
+
+Please provide the desired list of integers as a comma-separated string. For example: '1,2,3,4,5'.
+Do not add anything else to the answer.
+"""
+    human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
+
+    # list the messages
+    messages = [
+        system_message,
+        human_message_prompt,
+    ]
+    chat_prompt = ChatPromptTemplate.from_messages(messages)
+    
+    # get a chat completion from the formatted messages
+    chain = LLMChain(llm=chat, prompt=chat_prompt)
+    llm_output = chain.run(questions=questions_to_categorize, categories=current_categories)
+    print(llm_output)
+    questions_categories = parse_questions_categories(llm_output)
+    return questions_categories

@@ -10,8 +10,8 @@ def check_overlapping_questions(new_list, existing_list):
 
 # Define the pages
 def host_page():
+    st.set_page_config(layout="wide")
     st.markdown(':blue[_Host_] _view_.')
-    # st.sidebar.markdown("# Host Page 2 ❄️")
     # Host-related activities go here
     if 'host_eventdb' not in st.session_state:
         st.session_state['host_eventdb'] = None
@@ -68,6 +68,15 @@ def host_page():
     if 'use_model' not in st.session_state:
         st.session_state['use_model'] = False
 
+    if 'summarized_cat0' not in st.session_state:
+        st.session_state["summarized_cat0"] = []
+    if 'summarized_cat1' not in st.session_state:
+        st.session_state["summarized_cat1"] = []
+    if 'summarized_cat2' not in st.session_state:
+        st.session_state["summarized_cat2"] = []
+    if 'summarized_cat3' not in st.session_state:
+        st.session_state["summarized_cat3"] = []
+
     # Create the session state variables if they don't exist
     if not st.session_state['host_eventdb']:
         with st.form(key='event_name_form'):
@@ -86,12 +95,12 @@ def host_page():
         elif event_name_button:
             st.warning('Please fill in both the event name and presenter fields before submitting.')
     else:
-        eventdb = st.session_state['host_eventdb']
+        # eventdb = st.session_state['host_eventdb']
         event_name = st.session_state['host_event_database_name'].replace("_", " ")
         st.subheader(f"Q&A: {event_name}")
 
     if len(st.session_state['host_event_name'])>0:
-        if st.session_state["event_categories"]==0:
+        if len(st.session_state["event_categories"])==0:
             # Create a container for the questions
             st.session_state['question_list'] = st.session_state['host_eventdb'].get_questions_from_db()
             if  len(st.session_state['question_list'])>0:
@@ -103,65 +112,131 @@ def host_page():
             with st.expander(tstring):  
                 for question in st.session_state['question_list']:
                     st.markdown(f'- {question}')
-            
+
             # button to categorize the questions
             threshold_num_questions = 10
             if len(st.session_state['question_list'])>=threshold_num_questions:
                 if st.button("Categorize questions"):
                     if st.session_state["use_model"]:
-                        st.session_state["event_categories"] = suggest_categories(
-                            st.session_state['question_list']
+                        catergories_dict, st.session_state["list_categories_string"] = suggest_categories(
+                            st.session_state['host_event_database_name'],
+                            st.session_state['host_event_name'], 
+                            st.session_state['host_event_presenter']
                         )
-                        questions_categories = categorize_questions(st.session_state['question_list'])
-                        st.session_state['host_eventdb'].add_questions_category(
-                            st.session_state['question_list'], 
-                            questions_categories
+                        st.session_state["event_categories"] = list(catergories_dict.values())
+                        questions_categories = categorize_questions(
+                            st.session_state['question_list'],
+                            st.session_state["list_categories_string"]
                         )
-                        for i in range(4):
-                            st.session_state[f'questions_cat{i}'] = st.session_state['host_eventdb'].get_questions_in_category(
-                                st.session_state["event_categories"][i]
-                            )
+                        print(st.session_state["event_categories"])
                     else:
                         st.session_state["event_categories"] = [
-                            "Climate Policy Implementation and Enforcement", 
-                            "Business Incentives and Global Challenges",
-                            "Other",
-                            "Off topic"
+                            "Climate Change Policy Implementation", 
+                            "Renewable Energy and Carbon Capture",
+                            "Climate Justice and Business Incentivization",
+                            "Other"
                         ]
+                        questions_categories = [0,1,2,0,0,2,0,1,0,3,3,3,3,3,3]
+                    # add the categories in the database, and add each question to the categories' list
+                    st.session_state['host_eventdb'].add_questions_category(
+                        st.session_state['question_list'], 
+                        questions_categories
+                    )
+                    for i in range(4):
+                        st.session_state[f'questions_cat{i}'] = st.session_state['host_eventdb'].get_questions_by_category(i)
+                    st.experimental_rerun() # update website  
             else:
                 st.markdown(f"When there will be more than {threshold_num_questions} questions, you will have the option to categorize and summarize them.")
         else:
-            # Set up the layout with two columns
+            # Set up the layout with three column per category
             col0_cat0, col1_cat0, col2_cat0 = st.columns(3)
-
             # Display the questions received in the left column
             with col0_cat0:
                 st.markdown(st.session_state["event_categories"][0])
             with col1_cat0:
-                with st.expander("Expand questions"):  
-                    for question in ["Question 0", "Question 1"]:
+                num_qs = len(st.session_state['questions_cat0'])
+                with st.expander(f"{num_qs} questions"):  
+                    for question in st.session_state['questions_cat0']:
                         st.markdown(f'- {question}')
-                # Add a "Summarize Questions" button at the end of this column
             with col2_cat0:
-                if st.button('Summarize_Cat0'):
-                    st.session_state['last_action'] = 'summarize_questions_cat0'
-        
+                if len(st.session_state["summarized_cat0"])==0:
+                    if st.button('Summarize', key='Summarize_Cat0'):
+                        print("summarized_cat0")
+                        st.session_state["summarized_cat0"] = ["Summary Question 0", " Summary Question 1"]
+                        st.experimental_rerun() # update button print
+                        # st.session_state["summarized_cat0"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                else:
+                    for question in st.session_state["summarized_cat0"]:
+                        st.markdown(f'- {question}')
+
             st.divider()
 
-            # Set up the layout with two columns
+            # Set up the layout with three column per category
             col0_cat1, col1_cat1, col2_cat1 = st.columns(3)
-
             # Display the questions received in the left column
             with col0_cat1:
                 st.markdown(st.session_state["event_categories"][1])
             with col1_cat1:
-                with st.expander("Expand questions"):  
-                    for question in ["Question 0", "Question 1"]:
+                num_qs = len(st.session_state['questions_cat1'])
+                with st.expander(f"{num_qs} questions"):  
+                    for question in st.session_state['questions_cat1']:
                         st.markdown(f'- {question}')
-                # Add a "Summarize Questions" button at the end of this column
             with col2_cat1:
-                if st.button('Summarize_Cat1'):
-                    st.session_state['last_action'] = 'summarize_questions_cat1'
+                if len(st.session_state["summarized_cat1"])==0:
+                    if st.button('Summarize', key='Summarize_Cat1'):
+                        print("summarized_cat1")
+                        st.session_state["summarized_cat1"] = ["Summary Question 0", " Summary Question 1"]
+                        st.experimental_rerun() # update button print
+                        # st.session_state["summarized_cat1"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                else:
+                    for question in st.session_state["summarized_cat1"]:
+                        st.markdown(f'- {question}')
+
+            st.divider()
+
+            # Set up the layout with three column per category
+            col0_cat2, col1_cat2, col2_cat2 = st.columns(3)
+            # Display the questions received in the left column
+            with col0_cat2:
+                st.markdown(st.session_state["event_categories"][2])
+            with col1_cat2:
+                num_qs = len(st.session_state['questions_cat2'])
+                with st.expander(f"{num_qs} questions"):   
+                    for question in st.session_state['questions_cat2']:
+                        st.markdown(f'- {question}')
+            with col2_cat2:
+                if len(st.session_state["summarized_cat2"])==0:
+                    if st.button('Summarize', key='Summarize_Cat2'):
+                        print("summarized_cat2")
+                        st.session_state["summarized_cat2"] = ["Summary Question 0", " Summary Question 1"]
+                        st.experimental_rerun() # update button print
+                        # st.session_state["summarized_cat2"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                else:
+                    for question in st.session_state["summarized_cat2"]:
+                        st.markdown(f'- {question}')
+
+            st.divider()
+
+            # Set up the layout with three column per category
+            col0_cat3, col1_cat3, col2_cat3 = st.columns(3)
+            # Display the questions received in the left column
+            with col0_cat3:
+                st.markdown(st.session_state["event_categories"][3])
+            with col1_cat3:
+                num_qs = len(st.session_state['questions_cat3'])
+                with st.expander(f"{num_qs} questions"):  
+                    for question in st.session_state['questions_cat3']:
+                        st.markdown(f'- {question}')
+            with col2_cat3:
+                if len(st.session_state["summarized_cat3"])==0:
+                    if st.button('Summarize', key='Summarize_Cat3'):
+                        print("summarized_cat3")
+                        st.session_state["summarized_cat3"] = ["Summary Question 0", " Summary Question 1"]
+                        st.experimental_rerun() # update button print
+                        # st.session_state["summarized_cat3"] = summarize_questions_gpt(category_questions, event_name, event_presenter, use_model=False)
+                else:
+                    for question in st.session_state["summarized_cat3"]:
+                        st.markdown(f'- {question}')
 
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
@@ -178,16 +253,18 @@ def host_page():
                         if len(st.session_state['easy_questions'])==0:
                             if st.session_state["use_model"]:
                                 st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
-                                    st.session_state['question_list']
+                                    st.session_state['host_event_database_name'],
+                                    st.session_state['host_event_name'], 
+                                    st.session_state['host_event_presenter']
                                 )
                             else:
                                 st.session_state['easy_questions'] = [
-                                    "Template simple 0", 
-                                    "Template simple 1"
+                                    '"What strategies are being implemented at the national level to transition towards renewable energy?" - This question is specific and straightforward, asking about a specific action being taken to address climate change.',
+                                    '"How can governments better incentivize businesses to adopt greener practices and reduce their carbon footprint?" - This question is also specific and straightforward, asking about a specific action that can be taken to address climate change.'
                                 ]
                                 st.session_state['hard_questions'] = [
-                                    "Template complex 0", 
-                                    "Template complex 1"
+                                    '"Can fictional characters play a role in preventing global warming to increase in the next 40 years?" - This question challenges the presenter to think creatively and outside the box, as well as to provide evidence-based reasoning for their answer. It is also a bit whimsical and may require the presenter to balance humor with seriousness in their response.', 
+                                    '"What are your thoughts on the feasibility of transitioning to a circular economy, and what policy changes will this require?" - This question is broad and requires the presenter to have a deep understanding of circular economies and policy changes required to transition towards it.'
                                 ]
                         # make sure there is no overlap between the easy and hard questions
                         if len(st.session_state['hard_questions'])>0:
@@ -218,12 +295,12 @@ def host_page():
                                 )
                             else:
                                 st.session_state['easy_questions'] = [
-                                    "Template simple 0", 
-                                    "Template simple 1"
+                                    '"What strategies are being implemented at the national level to transition towards renewable energy?" - This question is specific and straightforward, asking about a specific action being taken to address climate change.',
+                                    '"How can governments better incentivize businesses to adopt greener practices and reduce their carbon footprint?" - This question is also specific and straightforward, asking about a specific action that can be taken to address climate change.'
                                 ]
                                 st.session_state['hard_questions'] = [
-                                    "Template complex 0", 
-                                    "Template complex 1"
+                                    '"Can fictional characters play a role in preventing global warming to increase in the next 40 years?" - This question challenges the presenter to think creatively and outside the box, as well as to provide evidence-based reasoning for their answer. It is also a bit whimsical and may require the presenter to balance humor with seriousness in their response.', 
+                                    '"What are your thoughts on the feasibility of transitioning to a circular economy, and what policy changes will this require?" - This question is broad and requires the presenter to have a deep understanding of circular economies and policy changes required to transition towards it.'
                                 ]
                         # make sure there is no overlap between the easy and hard questions
                         if len(st.session_state['easy_questions'])>0:

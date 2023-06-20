@@ -104,16 +104,7 @@ def participant_page():
             num_counts = len(st.session_state['person_question_list'])
             st.success(f'Question {num_counts} submitted successfully')
 
-            # Adding CSS for custom scrollable section
-            css='''
-            <style>
-            [data-testid="stExpander"] .streamlit-expanderHeader, [data-testid="stExpander"] .streamlit-expanderContent {
-                overflow: auto;
-                max-height: 300px;
-            }
-            </style>
-            '''
-            st.markdown(css, unsafe_allow_html=True)
+            # removed scrollable section to prevent using allow_unsafe
             tstring = f"See questions"
             with st.expander(tstring):  
                 for question in st.session_state['person_question_list']:
