@@ -18,7 +18,7 @@ from langchain.schema import (
 from database_class import EventDatabase
 
 def parse_summary_questions(summary_string):
-    summary_questions = re.findall(r"Question \d+: (.*? \(covering \d+ questions\))(?:\n|$)", summary_string)
+    summary_questions = re.findall(r"Question \d+: (.*?\(covering.*\d+ questions?\))(?:\n|$)", summary_string)
     return summary_questions
 
 def parse_question_string(question_string):
@@ -57,20 +57,20 @@ def summarize_questions_gpt(category_questions, event_name, event_presenter):
     # These questions should encapsulate the core themes of the initial list without merely listing or paraphrasing them.
     # set up the prompt template for the specific application
     system_message=SystemMessage(
-        content="You are a helpful assistant that works in event management. Your role is to take care of analyze all the queestions in Q&A sessions."
+        content="You are a helpful assistant that works in event management. Your role is to take care of analyze all the questions in Q&A sessions."
     )
 
     summarize_template = """
-Given the list of questions from our Q&A on {presenter}'s {name}, synthesize two succinct and overarching questions.
+Given the list of questions from our Q&A on {presenter}'s {name}, synthesize two succinct and overarching questions and count the number of questions each new question covers.
 
 Initial questions list: {questions}
 
 Please provide your answer following the template below exactly:
 
-Question 1: question (covering n questions)
-Question 2: question (covering n questions)
+Question 1: question (covering \d questions)
+Question 2: question (covering \d questions)
 
-Note: The newly synthesized questions should not be a simple enumeration or paraphrasing of the original questions but should capture their essence in a concise and novel manner. Make sure to mention the count of questions covered by each new question at their end.
+Note: The newly synthesized questions should not be a simple enumeration or paraphrasing of the original questions but should capture their essence in a concise and novel manner. Make sure to add the count of questions covered at their end.
 """
     human_message_prompt = HumanMessagePromptTemplate.from_template(summarize_template)
 
