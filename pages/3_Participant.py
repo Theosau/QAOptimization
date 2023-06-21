@@ -45,8 +45,7 @@ def participant_page():
         # When processing the selection, replace spaces back with underscores
         if selected_file != 'Select a file...':
             selected_file = selected_file.replace(" ", "_")
-        st.session_state['participant_event_database_name'] = selected_file
-        if selected_file != 'Select a file...':
+            st.session_state['participant_event_database_name'] = selected_file
             st.session_state['participant_eventdb'] = EventDatabase(st.session_state['participant_event_database_name'])
             st.experimental_rerun() # remove the form and add the subheader
     else:
