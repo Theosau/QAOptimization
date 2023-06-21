@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from database_class import EventDatabase
 from llm_actions import suggest_easy_hard_questions, suggest_categories, categorize_questions, summarize_questions_gpt
@@ -61,21 +62,42 @@ def host_page():
 
     # Create the session state variables if they don't exist
     if not st.session_state['host_eventdb']:
-        with st.form(key='event_name_form'):
-            event_name = st.text_input("Please enter your event name:")
-            event_presenter = st.text_input("Please enter the presenter name:")
-            event_name_button = st.form_submit_button(label='Provide Event Information')
-        if event_name_button and len(event_name)>0 and len(event_presenter)>0:
-            st.session_state['last_action'] = 'host_event_name'
-            st.success('Provided event name successfully')
-            event_database_name = (event_name + ' by ' + event_presenter).replace(" ", "_")
-            st.session_state['host_eventdb'] = EventDatabase(event_database_name)
-            st.session_state['host_event_name'] = event_name
-            st.session_state['host_event_database_name'] = event_database_name
-            st.session_state['host_event_presenter'] = event_presenter
-            st.experimental_rerun() # remove the form and add the subheader
-        elif event_name_button:
-            st.warning('Please fill in both the event name and presenter fields before submitting.')
+        event_type = st.radio(
+            'Select your event', 
+            ('New', 'Existing')
+        )
+        if event_type == 'New':
+            with st.form(key='event_name_form'):
+                event_name = st.text_input("Please enter your event name:")
+                event_presenter = st.text_input("Please enter the presenter name:")
+                event_name_button = st.form_submit_button(label='Provide Event Information')
+            if event_name_button and len(event_name)>0 and len(event_presenter)>0:
+                st.session_state['last_action'] = 'host_event_name'
+                st.success('Provided event name successfully')
+                event_database_name = (event_name + ' by ' + event_presenter).replace(" ", "_")
+                st.session_state['host_eventdb'] = EventDatabase(event_database_name)
+                st.session_state['host_event_name'] = event_name
+                st.session_state['host_event_database_name'] = event_database_name
+                st.session_state['host_event_presenter'] = event_presenter
+                st.experimental_rerun() # remove the form and add the subheader
+            elif event_name_button:
+                st.warning('Please fill in both the event name and presenter fields before submitting.')
+        else:
+             # Get all items in the "events" directory
+            items = os.listdir('./events/')
+            # Filter the list to only include ".sqlite" files
+            event_name_files = [item.split('.')[0].replace("_", " ") for item in items if item.endswith('.sqlite')]
+
+            # Add the placeholder string to the beginning of the list
+            event_name_files.insert(0, 'Select a file...')
+            selected_file = st.selectbox('What event are you participating in?', event_name_files)
+            # When processing the selection, replace spaces back with underscores
+            if selected_file != 'Select a file...':
+                st.session_state['host_event_name'], st.session_state['host_event_presenter'] = selected_file.split(' by ')
+                selected_file = selected_file.replace(" ", "_")
+                st.session_state['host_event_database_name'] = selected_file
+                st.session_state['host_eventdb'] = EventDatabase(st.session_state['host_event_database_name'])
+                st.experimental_rerun()
     else:
         # eventdb = st.session_state['host_eventdb']
         event_name = st.session_state['host_event_database_name'].replace("_", " ")
