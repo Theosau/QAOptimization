@@ -50,7 +50,7 @@ def host_page():
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
     if 'use_model' not in st.session_state:
-        st.session_state['use_model'] = True
+        st.session_state['use_model'] = False
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
@@ -340,7 +340,7 @@ def host_page():
                             st.experimental_rerun()
                 else:
                     if len(st.session_state["newly_added_questions"]) == 0:
-                        st.markdown('No questions have not been categorized yet.')
+                        st.markdown('There are no new questions to categorize.')
                     elif len(st.session_state["newly_added_questions"]) == 1:
                         st.markdown('1 new question has not been categorized yet.')
                     else:
