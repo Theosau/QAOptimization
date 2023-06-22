@@ -50,7 +50,7 @@ def host_page():
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
     if 'use_model' not in st.session_state:
-        st.session_state['use_model'] = True
+        st.session_state['use_model'] = False
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
