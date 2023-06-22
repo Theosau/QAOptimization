@@ -63,7 +63,7 @@ def host_page():
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
     if 'use_model' not in st.session_state:
-        st.session_state['use_model'] = True
+        st.session_state['use_model'] = False
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
@@ -396,7 +396,7 @@ def host_page():
             with col_re0:
                 if len(st.session_state["newly_added_questions"])>=4:
                     if st.session_state['use_model']:
-                        if st.button(f'Categorize the {len(st.session_state["newly_added_questions"])} new questions.'):
+                        if st.button(f'Categorize the {len(st.session_state["newly_added_questions"])} new questions'):
                             questions_categories = categorize_questions(
                                 st.session_state['newly_added_questions'],
                                 st.session_state["list_categories_string"]
@@ -412,7 +412,7 @@ def host_page():
                                     st.session_state[f'resummarize_cat{i}'] = True
                             st.experimental_rerun()
                     else:
-                        if st.button('Categorize new questions.'):
+                        if st.button('Categorize new questions'):
                             for i in range(4):
                                 st.session_state[f'questions_cat{i}'].append(st.session_state["newly_added_questions"][i])
                                 st.session_state[f'resummarize_cat{i}'] = True
@@ -425,14 +425,13 @@ def host_page():
                     else:
                         st.markdown('Categorization of new questions will be availble when there are 4 questions or more.')
             with col_re1:
-                if st.button('Regenerate categories over all event questions.'):
+                if st.button('Regenerate categories over all event questions'):
                     st.session_state["event_categories"]= []
                     for i in range(4):
                         st.session_state[f"summarized_cat{i}"] = []
                     st.experimental_rerun()
-        #### Easy, hard, influential - not impacted by categorization 
-        # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
-        # Set up the layout with three columns
+        
+        # Easy, hard, influential
         col_easy, col_hard = st.columns(2)
         threshold_easy_hard_questions = 4
         with col_easy:
