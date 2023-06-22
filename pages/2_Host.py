@@ -50,7 +50,7 @@ def host_page():
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
     if 'use_model' not in st.session_state:
-        st.session_state['use_model'] = False
+        st.session_state['use_model'] = True
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
@@ -307,7 +307,7 @@ def host_page():
             with col_re2:
                 if st.session_state['use_model']:
                     st.session_state["newly_added_questions"] = st.session_state['host_eventdb'].get_uncategorized_questions()
-                    st.experimental_rerun()
+                    # st.experimental_rerun()
                 else:
                     if not st.session_state["new_qs_categorized"]:
                         st.session_state["newly_added_questions"] = [
@@ -316,9 +316,9 @@ def host_page():
                             'Added Q3', 
                             'Added Q4'
                         ]
-                if len(st.session_state["newly_added_questions"])>2:
+                if len(st.session_state["newly_added_questions"])>4:
                     if st.session_state['use_model']:
-                        if st.button('Categorize newly added questions'):
+                        if st.button(f'Categorize the {len(st.session_state["newly_added_questions"])} newly added questions'):
                             questions_categories = categorize_questions(
                                 st.session_state['newly_added_questions'],
                                 st.session_state["list_categories_string"]
@@ -338,7 +338,13 @@ def host_page():
                             st.session_state["newly_added_questions"] = []
                             st.session_state["new_qs_categorized"] = True
                             st.experimental_rerun()
-
+                else:
+                    if len(st.session_state["newly_added_questions"]) == 0:
+                        st.markdown('No questions have not been categorized yet.')
+                    elif len(st.session_state["newly_added_questions"]) == 1:
+                        st.markdown('1 new question has not been categorized yet.')
+                    else:
+                        st.markdown(f'{len(st.session_state["newly_added_questions"])} new questions have not been categorized yet.')
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns
