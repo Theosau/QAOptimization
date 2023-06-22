@@ -59,6 +59,12 @@ def host_page():
         st.session_state["summarized_cat2"] = []
     if 'summarized_cat3' not in st.session_state:
         st.session_state["summarized_cat3"] = []
+    if 'newly_added_questions' not in st.session_state:
+        st.session_state['newly_added_questions'] = []
+    if 'list_categories_string' not in st.session_state:
+        st.session_state['list_categories_string'] = []
+    if 'new_qs_categorized' not in st.session_state:
+        st.session_state['new_qs_categorized'] = False
 
     # Create the session state variables if they don't exist
     if not st.session_state['host_eventdb']:
@@ -289,14 +295,50 @@ def host_page():
                                 st.markdown(f'- {question}')
                 else:
                     st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
-
+            st.divider()
             # give the opportunity to recategorize as new questions have been added
-            if st.button('Recategorize questions'):
-                st.session_state["event_categories"]= []
-                for i in range(4):
-                    st.session_state[f"summarized_cat{i}"] = []
-                st.experimental_rerun()
-        
+            col_re1, col_re2 = st.columns(2)
+            with col_re1:
+                if st.button('Recategorize questions'):
+                    st.session_state["event_categories"]= []
+                    for i in range(4):
+                        st.session_state[f"summarized_cat{i}"] = []
+                    st.experimental_rerun()
+            with col_re2:
+                if st.session_state['use_model']:
+                    st.session_state["newly_added_questions"] = st.session_state['host_eventdb'].get_uncategorized_questions()
+                    st.experimental_rerun()
+                else:
+                    if not st.session_state["new_qs_categorized"]:
+                        st.session_state["newly_added_questions"] = [
+                            'Added Q1', 
+                            'Added Q2', 
+                            'Added Q3', 
+                            'Added Q4'
+                        ]
+                if len(st.session_state["newly_added_questions"])>2:
+                    if st.session_state['use_model']:
+                        if st.button('Categorize newly added questions'):
+                            questions_categories = categorize_questions(
+                                st.session_state['newly_added_questions'],
+                                st.session_state["list_categories_string"]
+                            )
+                            st.session_state['host_eventdb'].add_questions_category(
+                                st.session_state['newly_added_questions'], 
+                                questions_categories
+                            )
+                            st.session_state["newly_added_questions"] = []
+                            for i in range(4):
+                                st.session_state[f'questions_cat{i}'] = st.session_state['host_eventdb'].get_questions_by_category(i)
+                            st.experimental_rerun()
+                    else:
+                        if st.button('Categorize newly added questions'):
+                            for i in range(4):
+                                st.session_state[f'questions_cat{i}'].append(st.session_state["newly_added_questions"][i])
+                            st.session_state["newly_added_questions"] = []
+                            st.session_state["new_qs_categorized"] = True
+                            st.experimental_rerun()
+
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns

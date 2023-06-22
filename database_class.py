@@ -73,10 +73,17 @@ class EventDatabase():
         conn.close()
         return 
 
-
     def get_questions_by_category(self, category_num):
         conn = sqlite3.connect(self.final_path + '.sqlite')
         c = conn.cursor()
         questions = [item[0] for item in c.execute('SELECT question FROM questions WHERE category = ?', (category_num,)).fetchall()]
+        conn.close()
+        return questions
+
+    def get_uncategorized_questions(self):
+        conn = sqlite3.connect(self.final_path + '.sqlite')
+        c = conn.cursor()
+        # Select questions where the category is NULL
+        questions = [item[0] for item in c.execute('SELECT question FROM questions WHERE category IS NULL').fetchall()]
         conn.close()
         return questions
