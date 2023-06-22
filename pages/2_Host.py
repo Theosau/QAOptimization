@@ -4,10 +4,23 @@ from database_class import EventDatabase
 from llm_actions import suggest_easy_hard_questions, suggest_categories, categorize_questions, summarize_questions_gpt
 
 def check_overlapping_questions(new_list, existing_list):
-    new_list_set = set(new_list)
-    existing_list_set = set(existing_list)
-    new_list_set -= existing_list_set
-    return list(new_list_set)
+    # get the qs without explanations
+    new_qs_only = [e.split('?')[0] for e in new_list]
+    existing_qs_only = [e.split('?')[0] for e in existing_list]
+
+    # build dictionraries to map questions only to full questions
+    new_list_dict = {new_qs_only[i]:new_list[i] for i in range(len(new_list))}
+    existing_list_dict = {existing_qs_only[i]:new_list[i] for i in range(len(existing_list))}
+
+    # transform the questions to sets
+    new_list_keys = new_list_dict.keys()
+    existing_list_keys = existing_list_dict.keys()
+
+    # remove pre-existing questions
+    new_list_keys -= existing_list_keys
+
+    # return the full quesitons
+    return [new_list_dict[k] for k in list(new_list_keys)]
 
 # Define the pages
 def host_page():
