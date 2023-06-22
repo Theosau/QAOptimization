@@ -97,7 +97,7 @@ def participant_page():
                     st.session_state['question_input']
                 )
                 st.session_state['num_questions_asked'] += 1
-                num_counts = st.session_state['num_questions_asked']
+                # num_counts = st.session_state['num_questions_asked']
             
             st.session_state['person_question_list'] = st.session_state['participant_eventdb'].get_questions_from_db(person_name=st.session_state['name_input'])
             num_counts = len(st.session_state['person_question_list'])

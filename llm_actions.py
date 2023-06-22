@@ -18,7 +18,7 @@ from langchain.schema import (
 from database_class import EventDatabase
 
 def parse_summary_questions(summary_string):
-    summary_questions = re.findall(r"Question \d+: (.*?\(covering.*\d+ questions?\))(?:\n|$)", summary_string)
+    summary_questions = re.findall(r"Question \d+: (.*?\(covering \d+ questions?\))\s*(?:\n|$)", summary_string)
     return summary_questions
 
 def parse_question_string(question_string):
@@ -161,7 +161,7 @@ Provide a reasoning and explanation for each selection.
 
 Question list: {questions}
 
-Your response should only include:
+Please provide your answer following the template below:
 
 Easiest questions:
 Question 1: question (explanation)

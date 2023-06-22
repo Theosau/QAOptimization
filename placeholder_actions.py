@@ -15,6 +15,14 @@
 # print(suggest_categories(event_database_name, event_name, event_presenter))
 
 
-from database_class import EventDatabase
+# from database_class import EventDatabase
 
-eventdb = EventDatabase('Climate_Change_Policies_by_Joe_Biden')
+# eventdb = EventDatabase('Climate_Change_Policies_by_Joe_Biden')
+import re
+questions = """
+Question 1: How can we effectively engage and empower all stakeholders, including youth, academia, and industry, to mitigate the impacts of climate change? (covering 4 questions) 
+
+Question 2: What are the potential impacts of climate change on food prices and how can we address them? (covering 1 question)"""
+
+print(re.findall(r"Question \d+: (.*?\(covering \d+ questions?\))\s*(?:\n|$)", questions))
+

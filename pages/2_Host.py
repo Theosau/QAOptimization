@@ -65,6 +65,9 @@ def host_page():
         st.session_state['list_categories_string'] = []
     if 'new_qs_categorized' not in st.session_state:
         st.session_state['new_qs_categorized'] = False
+    for i in range(4):
+        if f'resummarize_cat{i}' not in st.session_state:
+            st.session_state[f'resummarize_cat{i}'] = False
 
     # Create the session state variables if they don't exist
     if not st.session_state['host_eventdb']:
@@ -187,6 +190,22 @@ def host_page():
                                 ]
                             st.experimental_rerun() # update button print
                     else:
+                        if st.session_state[f'resummarize_cat0']:
+                            if st.button('Resummarize', key='Reummarize_Cat0'):
+                                print("summarized_cat0")
+                                if st.session_state['use_model']:
+                                    st.session_state["summarized_cat0"] = summarize_questions_gpt(
+                                        st.session_state['questions_cat0'],
+                                        st.session_state['host_event_name'],
+                                        st.session_state['host_event_presenter']
+                                    )
+                                else:
+                                    st.session_state["summarized_cat0"] = [
+                                        "How can climate change policies be effectively implemented on a global scale to address existing challenges and align with the Paris Agreement goals? (covering 3 questions)",
+                                        "What policy changes can be made to drive both large-scale carbon capture and storage technologies and improve biodiversity conservation in the context of climate change? (covering 2 questions)"
+                                    ]
+                                st.session_state[f'resummarize_cat0'] = False
+                                st.experimental_rerun() # update button print
                         with st.expander("Summarized questions"):  
                             for question in st.session_state["summarized_cat0"]:
                                 st.markdown(f'- {question}')
@@ -221,6 +240,19 @@ def host_page():
                                 pass
                             st.experimental_rerun() # update button print
                     else:
+                        if st.session_state[f'resummarize_cat1']:
+                            if st.button('Resummarize', key='Reummarize_Cat1'):
+                                print("summarized_cat1")
+                                if st.session_state['use_model']:
+                                    st.session_state["summarized_cat1"] = summarize_questions_gpt(
+                                        st.session_state['questions_cat1'],
+                                        st.session_state['host_event_name'],
+                                        st.session_state['host_event_presenter']
+                                    )
+                                else:
+                                    pass
+                                st.session_state[f'resummarize_cat1'] = False
+                                st.experimental_rerun() # update button print
                         with st.expander("Summarized questions"):
                             for question in st.session_state["summarized_cat1"]:
                                 st.markdown(f'- {question}')
@@ -254,6 +286,19 @@ def host_page():
                                 pass
                             st.experimental_rerun() # update button print
                     else:
+                        if st.session_state[f'resummarize_cat2']:
+                            if st.button('Resummarize', key='Reummarize_Cat2'):
+                                print("summarized_cat2")
+                                if st.session_state['use_model']:
+                                    st.session_state["summarized_cat2"] = summarize_questions_gpt(
+                                        st.session_state['questions_cat2'],
+                                        st.session_state['host_event_name'],
+                                        st.session_state['host_event_presenter']
+                                    )
+                                else:
+                                    pass
+                                st.session_state[f'resummarize_cat2'] = False
+                                st.experimental_rerun() # update button print
                         with st.expander("Summarized questions"):
                             for question in st.session_state["summarized_cat2"]:
                                 st.markdown(f'- {question}')
@@ -287,9 +332,25 @@ def host_page():
                                 st.session_state["summarized_cat3"] = [
                                     "How will Joe Biden's climate change policies address the feasibility of transitioning to a circular economy, updating university curriculums, and the impact of climate change on food prices? (covering 3 questions)",
                                     "What is Joe Biden's stance on governmental contributions to Tesla cars and their role in limiting climate change, and how does this fit into his overall climate change policies? (covering 2 questions)",
-                                  ]
+                                ]
                             st.experimental_rerun() # update button print
                     else:
+                        if st.session_state[f'resummarize_cat3']:
+                            if st.button('Resummarize', key='Reummarize_Cat3'):
+                                print("summarized_cat3")
+                                if st.session_state['use_model']:
+                                    st.session_state["summarized_cat3"] = summarize_questions_gpt(
+                                        st.session_state['questions_cat3'],
+                                        st.session_state['host_event_name'],
+                                        st.session_state['host_event_presenter']
+                                    )
+                                else:
+                                    st.session_state["summarized_cat3"] = [
+                                        "How will Joe Biden's climate change policies address the feasibility of transitioning to a circular economy, updating university curriculums, and the impact of climate change on food prices? (covering 3 questions)",
+                                        "What is Joe Biden's stance on governmental contributions to Tesla cars and their role in limiting climate change, and how does this fit into his overall climate change policies? (covering 2 questions)",
+                                    ]
+                                st.session_state[f'resummarize_cat3'] = False
+                                st.experimental_rerun() # update button print
                         with st.expander("Summarized questions"):
                             for question in st.session_state["summarized_cat3"]:
                                 st.markdown(f'- {question}')
@@ -297,22 +358,32 @@ def host_page():
                     st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
             st.divider()
             # give the opportunity to recategorize as new questions have been added
+            if st.session_state['use_model']:
+                st.session_state["newly_added_questions"] = st.session_state['host_eventdb'].get_uncategorized_questions()
+            else:
+                if not st.session_state["new_qs_categorized"]:
+                    st.session_state["newly_added_questions"] = [
+                        'Added Q1', 
+                        'Added Q2', 
+                        'Added Q3', 
+                        'Added Q4'
+                    ]
+            if len(st.session_state["newly_added_questions"]) == 0:
+                st.markdown('There are no new questions.')
+            else:
+                if len(st.session_state["newly_added_questions"]) == 1:
+                    estring = '1 new question has not been categorized yet.'
+                else:
+                    estring = f'{len(st.session_state["newly_added_questions"])} new questions have not been categorized yet.'
+                with st.expander(estring):  
+                    for question in st.session_state['newly_added_questions']:
+                        st.markdown(f'- {question}')
+
             col_re0, col_re1 = st.columns(2)
             with col_re0:
-                if st.session_state['use_model']:
-                    st.session_state["newly_added_questions"] = st.session_state['host_eventdb'].get_uncategorized_questions()
-                    # st.experimental_rerun()
-                else:
-                    if not st.session_state["new_qs_categorized"]:
-                        st.session_state["newly_added_questions"] = [
-                            'Added Q1', 
-                            'Added Q2', 
-                            'Added Q3', 
-                            'Added Q4'
-                        ]
-                if len(st.session_state["newly_added_questions"])>4:
+                if len(st.session_state["newly_added_questions"])>=4:
                     if st.session_state['use_model']:
-                        if st.button(f'Categorize the {len(st.session_state["newly_added_questions"])} newly added questions'):
+                        if st.button(f'Categorize the {len(st.session_state["newly_added_questions"])} new questions.'):
                             questions_categories = categorize_questions(
                                 st.session_state['newly_added_questions'],
                                 st.session_state["list_categories_string"]
@@ -324,33 +395,25 @@ def host_page():
                             st.session_state["newly_added_questions"] = []
                             for i in range(4):
                                 st.session_state[f'questions_cat{i}'] = st.session_state['host_eventdb'].get_questions_by_category(i)
+                                if i in questions_categories:
+                                    st.session_state[f'resummarize_cat{i}'] = True
                             st.experimental_rerun()
                     else:
-                        if st.button('Categorize newly added questions'):
+                        if st.button('Categorize new questions.'):
                             for i in range(4):
                                 st.session_state[f'questions_cat{i}'].append(st.session_state["newly_added_questions"][i])
+                                st.session_state[f'resummarize_cat{i}'] = True
                             st.session_state["newly_added_questions"] = []
                             st.session_state["new_qs_categorized"] = True
                             st.experimental_rerun()
-                if len(st.session_state["newly_added_questions"]) == 0:
-                    st.markdown('There are no new questions to categorize.')
                 else:
-                    if len(st.session_state["newly_added_questions"]) == 1:
-                        estring = '1 new question has not been categorized yet.'
-                    else:
-                        estring = f'{len(st.session_state["newly_added_questions"])} new questions have not been categorized yet.'
-                    with st.expander(estring):  
-                        for question in st.session_state['newly_added_questions']:
-                            st.markdown(f'- {question}')
+                    st.markdown('New questions will be displayed here.')
             with col_re1:
-                if len(st.session_state["newly_added_questions"])>4:
-                    if st.button('Regenerate categories including new questions.'):
-                        st.session_state["event_categories"]= []
-                        for i in range(4):
-                            st.session_state[f"summarized_cat{i}"] = []
-                        st.experimental_rerun()
-                else:
-                    st.markdown('You will be able to regenerate the categories once more than 4 questions are added.')
+                if st.button('Regenerate categories over all event questions.'):
+                    st.session_state["event_categories"]= []
+                    for i in range(4):
+                        st.session_state[f"summarized_cat{i}"] = []
+                    st.experimental_rerun()
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns
