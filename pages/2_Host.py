@@ -297,14 +297,8 @@ def host_page():
                     st.markdown(f'Summarization will be avilable once there will be more than {threshold_num_questions_cat} questions.')
             st.divider()
             # give the opportunity to recategorize as new questions have been added
-            col_re1, col_re2 = st.columns(2)
-            with col_re1:
-                if st.button('Recategorize questions'):
-                    st.session_state["event_categories"]= []
-                    for i in range(4):
-                        st.session_state[f"summarized_cat{i}"] = []
-                    st.experimental_rerun()
-            with col_re2:
+            col_re0, col_re1 = st.columns(2)
+            with col_re0:
                 if st.session_state['use_model']:
                     st.session_state["newly_added_questions"] = st.session_state['host_eventdb'].get_uncategorized_questions()
                     # st.experimental_rerun()
@@ -338,13 +332,25 @@ def host_page():
                             st.session_state["newly_added_questions"] = []
                             st.session_state["new_qs_categorized"] = True
                             st.experimental_rerun()
+                if len(st.session_state["newly_added_questions"]) == 0:
+                    st.markdown('There are no new questions to categorize.')
                 else:
-                    if len(st.session_state["newly_added_questions"]) == 0:
-                        st.markdown('There are no new questions to categorize.')
-                    elif len(st.session_state["newly_added_questions"]) == 1:
-                        st.markdown('1 new question has not been categorized yet.')
+                    if len(st.session_state["newly_added_questions"]) == 1:
+                        estring = '1 new question has not been categorized yet.'
                     else:
-                        st.markdown(f'{len(st.session_state["newly_added_questions"])} new questions have not been categorized yet.')
+                        estring = f'{len(st.session_state["newly_added_questions"])} new questions have not been categorized yet.'
+                    with st.expander(estring):  
+                        for question in st.session_state['newly_added_questions']:
+                            st.markdown(f'- {question}')
+            with col_re1:
+                if len(st.session_state["newly_added_questions"])>4:
+                    if st.button('Regenerate categories including new questions.'):
+                        st.session_state["event_categories"]= []
+                        for i in range(4):
+                            st.session_state[f"summarized_cat{i}"] = []
+                        st.experimental_rerun()
+                else:
+                    st.markdown('You will be able to regenrate the categories once more than 4 questions are added.')
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns
