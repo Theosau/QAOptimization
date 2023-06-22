@@ -50,7 +50,7 @@ def host_page():
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
     if 'use_model' not in st.session_state:
-        st.session_state['use_model'] = False
+        st.session_state['use_model'] = True
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
@@ -407,7 +407,10 @@ def host_page():
                             st.session_state["new_qs_categorized"] = True
                             st.experimental_rerun()
                 else:
-                    st.markdown('New questions will be displayed here.')
+                    if len(st.session_state["newly_added_questions"])==0:
+                        st.markdown('New questions will be displayed here.')
+                    else:
+                        st.markdown('Categorization of new questions will be availble when there are 4 questions or more.')
             with col_re1:
                 if st.button('Regenerate categories over all event questions.'):
                     st.session_state["event_categories"]= []
@@ -423,31 +426,43 @@ def host_page():
             st.header('Straightforward')
             if not st.session_state['host_eventdb'].is_db_empty():
                 if len(st.session_state["question_list"])>=threshold_easy_hard_questions:
-                    if st.button('Suggest Questions', key='Suggest_Straightforward_Questions'):
+                    if st.session_state['easy_button_counter']==0:
+                        suggest_string = 'Suggest Questions'
+                    elif st.session_state['easy_button_counter']>0:
+                        suggest_string = 'Resuggest Questions'
+                    if st.button(suggest_string, key='Suggest_Straightforward_Questions'):
                         st.session_state['last_action'] = 'easy_questions'
                         st.session_state['easy_button_counter'] += 1
-                        if len(st.session_state['easy_questions'])==0:
-                            if st.session_state["use_model"]:
-                                st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
+                        if st.session_state["use_model"]:
+                            if suggest_string == 'Suggest Questions':
+                                 if st.session_state['hard_button_counter']==0: # already easy questions if hard has been pressed 
+                                    st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
+                                        st.session_state['host_event_database_name'],
+                                        st.session_state['host_event_name'], 
+                                        st.session_state['host_event_presenter']
+                                    )
+                            elif suggest_string == 'Resuggest Questions':
+                                st.session_state['easy_questions'], _ = suggest_easy_hard_questions(
                                     st.session_state['host_event_database_name'],
                                     st.session_state['host_event_name'], 
                                     st.session_state['host_event_presenter']
                                 )
-                            else:
-                                st.session_state['easy_questions'] = [
-                                    '"What strategies are being implemented at the national level to transition towards renewable energy?" - This question is specific and straightforward, asking about a specific action being taken to address climate change.',
-                                    '"How can governments better incentivize businesses to adopt greener practices and reduce their carbon footprint?" - This question is also specific and straightforward, asking about a specific action that can be taken to address climate change.'
-                                ]
-                                st.session_state['hard_questions'] = [
-                                    '"Can fictional characters play a role in preventing global warming to increase in the next 40 years?" - This question challenges the presenter to think creatively and outside the box, as well as to provide evidence-based reasoning for their answer. It is also a bit whimsical and may require the presenter to balance humor with seriousness in their response.', 
-                                    '"What are your thoughts on the feasibility of transitioning to a circular economy, and what policy changes will this require?" - This question is broad and requires the presenter to have a deep understanding of circular economies and policy changes required to transition towards it.'
-                                ]
+                        else:
+                            st.session_state['easy_questions'] = [
+                                '"What strategies are being implemented at the national level to transition towards renewable energy?" - This question is specific and straightforward, asking about a specific action being taken to address climate change.',
+                                '"How can governments better incentivize businesses to adopt greener practices and reduce their carbon footprint?" - This question is also specific and straightforward, asking about a specific action that can be taken to address climate change.'
+                            ]
+                            st.session_state['hard_questions'] = [
+                                '"Can fictional characters play a role in preventing global warming to increase in the next 40 years?" - This question challenges the presenter to think creatively and outside the box, as well as to provide evidence-based reasoning for their answer. It is also a bit whimsical and may require the presenter to balance humor with seriousness in their response.', 
+                                '"What are your thoughts on the feasibility of transitioning to a circular economy, and what policy changes will this require?" - This question is broad and requires the presenter to have a deep understanding of circular economies and policy changes required to transition towards it.'
+                            ]
                         # make sure there is no overlap between the easy and hard questions
                         if len(st.session_state['hard_questions'])>0:
                             st.session_state['easy_questions'] = check_overlapping_questions(
                                 st.session_state['easy_questions'],
                                 st.session_state['hard_questions']
                             )
+                        st.experimental_rerun()
                     if st.session_state['easy_button_counter']>0:
                         for question in st.session_state['easy_questions']:
                             st.markdown(f'- {question}')
@@ -461,29 +476,43 @@ def host_page():
             st.header('Challenging')
             if not st.session_state['host_eventdb'].is_db_empty():
                 if len(st.session_state["question_list"])>=threshold_easy_hard_questions:
-                    if st.button('Suggest Questions', key='Suggest_Challenging_Questions'):
+                    if st.session_state['hard_button_counter']==0:
+                        suggest_string = 'Suggest Questions'
+                    elif st.session_state['hard_button_counter']>0:
+                        suggest_string = 'Resuggest Questions'
+                    if st.button(suggest_string, key='Suggest_Challenging_Questions'):
                         st.session_state['last_action'] = 'hard_questions'
                         st.session_state['hard_button_counter'] += 1
-                        if len(st.session_state['hard_questions'])==0:
-                            if st.session_state["use_model"]:
-                                st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
-                                    st.session_state['question_list']
+                        if st.session_state["use_model"]:
+                            if suggest_string == 'Suggest Questions':
+                                if st.session_state['easy_button_counter']==0: # already hard questions if easy has been pressed 
+                                    st.session_state['easy_questions'], st.session_state['hard_questions'] = suggest_easy_hard_questions(
+                                        st.session_state['host_event_database_name'],
+                                        st.session_state['host_event_name'], 
+                                        st.session_state['host_event_presenter']
+                                    )
+                            elif suggest_string == 'Resuggest Questions':
+                                _, st.session_state['hard_questions'] = suggest_easy_hard_questions(
+                                    st.session_state['host_event_database_name'],
+                                    st.session_state['host_event_name'], 
+                                    st.session_state['host_event_presenter']
                                 )
-                            else:
-                                st.session_state['easy_questions'] = [
-                                    '"What strategies are being implemented at the national level to transition towards renewable energy?" - This question is specific and straightforward, asking about a specific action being taken to address climate change.',
-                                    '"How can governments better incentivize businesses to adopt greener practices and reduce their carbon footprint?" - This question is also specific and straightforward, asking about a specific action that can be taken to address climate change.'
-                                ]
-                                st.session_state['hard_questions'] = [
-                                    '"Can fictional characters play a role in preventing global warming to increase in the next 40 years?" - This question challenges the presenter to think creatively and outside the box, as well as to provide evidence-based reasoning for their answer. It is also a bit whimsical and may require the presenter to balance humor with seriousness in their response.', 
-                                    '"What are your thoughts on the feasibility of transitioning to a circular economy, and what policy changes will this require?" - This question is broad and requires the presenter to have a deep understanding of circular economies and policy changes required to transition towards it.'
-                                ]
+                        else:
+                            st.session_state['easy_questions'] = [
+                                '"What strategies are being implemented at the national level to transition towards renewable energy?" - This question is specific and straightforward, asking about a specific action being taken to address climate change.',
+                                '"How can governments better incentivize businesses to adopt greener practices and reduce their carbon footprint?" - This question is also specific and straightforward, asking about a specific action that can be taken to address climate change.'
+                            ]
+                            st.session_state['hard_questions'] = [
+                                '"Can fictional characters play a role in preventing global warming to increase in the next 40 years?" - This question challenges the presenter to think creatively and outside the box, as well as to provide evidence-based reasoning for their answer. It is also a bit whimsical and may require the presenter to balance humor with seriousness in their response.', 
+                                '"What are your thoughts on the feasibility of transitioning to a circular economy, and what policy changes will this require?" - This question is broad and requires the presenter to have a deep understanding of circular economies and policy changes required to transition towards it.'
+                            ]
                         # make sure there is no overlap between the easy and hard questions
                         if len(st.session_state['easy_questions'])>0:
                             st.session_state['hard_questions'] = check_overlapping_questions(
                                 st.session_state['hard_questions'],
                                 st.session_state['easy_questions']
                             )
+                        st.experimental_rerun()
                     if st.session_state['hard_button_counter']>0:
                         for question in st.session_state['hard_questions']:
                             st.markdown(f'- {question}')
