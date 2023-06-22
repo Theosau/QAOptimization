@@ -50,7 +50,7 @@ def host_page():
     if 'questions_cat3' not in st.session_state:
         st.session_state['questions_cat3'] = []
     if 'use_model' not in st.session_state:
-        st.session_state['use_model'] = False
+        st.session_state['use_model'] = True
     if 'summarized_cat0' not in st.session_state:
         st.session_state["summarized_cat0"] = []
     if 'summarized_cat1' not in st.session_state:
@@ -350,7 +350,7 @@ def host_page():
                             st.session_state[f"summarized_cat{i}"] = []
                         st.experimental_rerun()
                 else:
-                    st.markdown('You will be able to regenrate the categories once more than 4 questions are added.')
+                    st.markdown('You will be able to regenerate the categories once more than 4 questions are added.')
         #### Easy, hard, influential - not impacted by categorization 
         # (though I still need to make sure that I gather the easy and hard from my initial categorization call)
         # Set up the layout with three columns
