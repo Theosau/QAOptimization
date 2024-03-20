@@ -35,9 +35,12 @@ The result? An organized, efficient, and inclusive Q&A session that delivers val
 
 Q&A Streamliner isn't just another Q&A management tool. It's a vision to redefine event planning, combining the power of machine learning with a user-friendly web-based interface. We've designed Q&A Streamliner with your needs at heart, ensuring an intuitive, scalable, and secure platform suitable for both small gatherings and larger, international events.
 
+https://github.com/Theosau/QAOptimization/assets/56083624/71ec768d-e38a-4ac7-bbbe-f0fe8b15dea1
+
 ---
 
-## Embrace the Future with Q&A Streamliner
+## Future Ideas
+### Embrace the Future with Q&A Streamliner
 
 Our vision for the future goes beyond just enhancing Q&A sessions. We're looking at a transformation in the event management landscape, thanks to AI-driven innovations:
 
@@ -46,7 +49,7 @@ Our vision for the future goes beyond just enhancing Q&A sessions. We're looking
 - **Real-Time Event Analysis:** Or AI providing instant insights into attendee engagement and session popularity, allowing you to adapt your event dynamics in real-time?
 - **AI-Generated Summaries:** How about AI summarizing your event, capturing key highlights and discussion points?
 
-Moreover, we're thrilled to announce our upcoming feature - a **Live Event Chatbot**:
+Moreover, we'll announce an upcoming feature - a **Live Event Chatbot**:
 
 - **Catch-Up Feature:** Attendees arriving late can chat with the bot to get up to speed with the event.
 - **Concept Clarification:** If participants need clarity on concepts discussed during the event, the chatbot is at their service.
@@ -55,6 +58,4 @@ Moreover, we're thrilled to announce our upcoming feature - a **Live Event Chatb
 
 By choosing Q&A Streamliner, you're not just buying a product; you're partnering with the future of event management. So, let's make every question, every interaction, and every event count! Welcome to the next level of event experiences.
 
-
-https://github.com/Theosau/QAOptimization/assets/56083624/71ec768d-e38a-4ac7-bbbe-f0fe8b15dea1
 
