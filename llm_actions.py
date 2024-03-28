@@ -56,7 +56,7 @@ def summarize_questions_gpt(event_database_name, event_name, event_presenter, us
 
         # set up the prompt template for the specific application
         system_message=SystemMessage(
-            content="You are a helpful assistant that works in event management. Your role is to take care of analyze all the queestions in Q&A sessions."
+            content="You are a helpful assistant that works in event management. Your role is to take care of analyzing all the questions in Q&A sessions."
         )
 
         summarize_template = """
